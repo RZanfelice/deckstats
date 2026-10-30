@@ -1,0 +1,28 @@
+# Dados brutos (baixar via scripts/)
+AllPrintingsCSVFiles/
+data/raw/
+
+# Ambiente
+.env
+.venv/
+__pycache__/
+*.pyc
+
+# ML
+mlruns/
+*.joblib
+*.pkl
+
+# Frontend
+node_modules/
+dist/
+
+# Misc
+.DS_Store
+
+# Documentação de trabalho (ainda em mudança)
+docs/
+
+# Artefatos de teste
+.coverage
+htmlcov/
