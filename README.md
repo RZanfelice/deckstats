@@ -56,7 +56,7 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Sobe a API (8000), Postgres (5432) e Redis (6379).
+Sobe a API (8000), Postgres (5433, para não colidir com um Postgres local) e Redis (6379).
 
 ### Qualidade
 

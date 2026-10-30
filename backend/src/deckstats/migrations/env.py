@@ -3,6 +3,7 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+import deckstats.catalog.models  # noqa: F401  (registra as tabelas no metadata)
 from deckstats.config import get_settings
 from deckstats.db import Base
 

@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="DECKSTATS_", env_file=".env", extra="ignore")
 
     environment: str = "development"
-    database_url: str = "postgresql+psycopg://deckstats:deckstats@localhost:5432/deckstats"
+    database_url: str = "postgresql+psycopg://deckstats:deckstats@localhost:5433/deckstats"
     log_level: str = "INFO"
 
 
