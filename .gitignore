@@ -1,6 +1,6 @@
 # Dados brutos (baixar via scripts/)
 AllPrintingsCSVFiles/
-data/raw/
+data/
 
 # Ambiente
 .env

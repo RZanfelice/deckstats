@@ -7,8 +7,9 @@ from sqlalchemy.orm import Session
 
 from deckstats.catalog.loader import load_catalog
 from deckstats.catalog.models import CardFace, DataVersion, OracleCard
-from deckstats.catalog.records import CardRecord, FaceRecord, SourceVersion
+from deckstats.catalog.records import SourceVersion
 from deckstats.db import Base
+from tests.catalog.factories import card, face
 
 V1 = SourceVersion(version="5.3.0", date=date(2026, 5, 10))
 V2 = SourceVersion(version="5.4.0", date=date(2026, 6, 10))
@@ -20,28 +21,6 @@ def session() -> Iterator[Session]:
     Base.metadata.create_all(engine)
     with Session(engine) as session:
         yield session
-
-
-def face(name: str, position: int = 0, text: str | None = None) -> FaceRecord:
-    return FaceRecord(
-        position=position, side=None, name=name, mana_cost="{1}", mana_value=1.0, colors=[],
-        type_line="Artifact", supertypes=[], types=["Artifact"], subtypes=[], text=text,
-        power=None, toughness=None, loyalty=None, defense=None, keywords=[], produced_mana=["C"],
-    )  # fmt: skip
-
-
-def card(
-    oracle_id: str, name: str, faces: list[FaceRecord] | None = None, **overrides: object
-) -> CardRecord:
-    values: dict[str, object] = {
-        "oracle_id": oracle_id, "name": name, "layout": "normal", "mana_value": 1.0,
-        "color_identity": [], "commander_legality": "legal", "is_funny": False,
-        "is_game_changer": False, "can_be_commander": False, "edhrec_rank": None,
-        "printing_uuid": f"uuid-{oracle_id}", "scryfall_id": None, "set_code": "AAA",
-        "collector_number": "1", "released_at": date(2024, 1, 1), "faces": faces or [face(name)],
-    }  # fmt: skip
-    values.update(overrides)
-    return CardRecord(**values)  # type: ignore[arg-type]
 
 
 def count(session: Session, model: type) -> int:

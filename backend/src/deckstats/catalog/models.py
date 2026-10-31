@@ -41,7 +41,15 @@ class OracleCard(Base):
     """Uma carta (oracle id), com os dados da impressão mais recente."""
 
     __tablename__ = "oracle_card"
-    __table_args__ = (Index("ix_oracle_card_name_normalized", "name_normalized"),)
+    __table_args__ = (
+        Index("ix_oracle_card_name_normalized", "name_normalized"),
+        Index(
+            "ix_oracle_card_name_trgm",
+            "name_normalized",
+            postgresql_using="gin",
+            postgresql_ops={"name_normalized": "gin_trgm_ops"},
+        ),
+    )
 
     oracle_id: Mapped[str] = mapped_column(String(36), primary_key=True)
     name: Mapped[str] = mapped_column(String(255))
@@ -73,6 +81,12 @@ class CardFace(Base):
     __table_args__ = (
         UniqueConstraint("oracle_id", "position"),
         Index("ix_card_face_name_normalized", "name_normalized"),
+        Index(
+            "ix_card_face_name_trgm",
+            "name_normalized",
+            postgresql_using="gin",
+            postgresql_ops={"name_normalized": "gin_trgm_ops"},
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
