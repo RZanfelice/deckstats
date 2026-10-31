@@ -10,8 +10,9 @@ from sqlalchemy.orm import Session
 
 from deckstats.catalog.repository import SqlCardRepository
 from deckstats.deck.analysis import analyze_decklist
+from deckstats.simulation.compare import compare_keep_policies
 from deckstats.simulation.engine import SimulationOptions, run_simulation
-from deckstats.simulation.model import build_sim_deck
+from deckstats.simulation.model import build_sim_deck, build_simulation_input
 
 ROOT = Path(__file__).resolve().parents[3]
 CATALOG = ROOT / "data" / "catalog.sqlite"
@@ -56,3 +57,22 @@ def test_real_decks_keep_most_opening_hands(path: Path, repository: SqlCardRepos
     assert 0.5 < result.first_hand_keepable.p < 1.0
     assert result.mulligans is not None
     assert 5.0 <= result.mulligans.mean_final_hand_size <= 7.0
+
+
+@pytest.mark.parametrize("path", sorted(DECKS.glob("*.txt")), ids=lambda p: p.name)
+def test_castable_policy_trades_mulligans_for_steadier_mana(
+    path: Path, repository: SqlCardRepository
+) -> None:
+    """Nas mesmas partidas: mais mulligans, mão final um pouco menor e mana melhor."""
+    analysis = analyze_decklist(path.read_text(encoding="utf-8"), repository)
+    sim = build_simulation_input(analysis.deck)
+    base = SimulationOptions(iterations=3_000, seed=500)
+
+    rows = {r.metric: r for r in compare_keep_policies(sim.cards, sim.mana, base, replicates=4)}
+
+    assert rows["fez mulligan"].difference > 0.05 and rows["fez mulligan"].significant
+    assert rows["cartas na mão final"].difference < 0
+    assert rows["terrenos sem perder jogada até o turno 4"].difference > 0
+    assert rows["terrenos sem perder jogada até o turno 4"].significant
+    on_curve = next(r for name, r in rows.items() if name.endswith("(na curva)"))
+    assert on_curve.difference > 0 and on_curve.significant

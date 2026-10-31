@@ -192,3 +192,47 @@ def test_openapi_documents_both_endpoints(client: TestClient) -> None:
     assert "/simulations" in schema["paths"]
     content = schema["paths"]["/simulations/text"]["post"]["requestBody"]["content"]
     assert list(content) == ["text/plain"]
+
+
+MIXED = "Commander\n1 Elf Chief\nDeck\n36 Forest\n63 Cultivate\n"
+
+
+def test_the_default_keep_policy_is_castable_and_is_echoed(client: TestClient) -> None:
+    options = post(client, MIXED)["options"]
+
+    assert options["keep_policy"] == "castable"
+    assert options["keep_min_effective"] == 2.5
+    assert options["ramp_credit_cap"] == 2
+    assert options["cantrip_weight"] == 0.5
+
+
+def test_the_simple_policy_keeps_more_hands_than_castable(client: TestClient) -> None:
+    castable = post(client, MIXED, iterations=2_000, seed=3)
+    simple = post(client, MIXED, iterations=2_000, seed=3, keep_policy="simple")
+
+    assert simple["options"]["keep_policy"] == "simple"
+    assert simple["opening_hand"]["keepable"]["p"] >= castable["opening_hand"]["keepable"]["p"]
+
+
+def test_text_endpoint_reads_the_keep_options(client: TestClient) -> None:
+    query = "?keep_policy=simple&keep_min_effective=2&ramp_credit_cap=1&cantrip_weight=0"
+    body = post_text(client, MIXED, query).json()
+
+    assert body["options"]["keep_policy"] == "simple"
+    assert body["options"]["ramp_credit_cap"] == 1
+    assert body["options"]["cantrip_weight"] == 0.0
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        {"keep_policy": "magic"},
+        {"keep_min_effective": -1},
+        {"ramp_credit_cap": 9},
+        {"cantrip_weight": 2},
+    ],
+)
+def test_invalid_keep_options_are_rejected(client: TestClient, options: dict[str, Any]) -> None:
+    response = client.post("/simulations", json={"decklist": MIXED, "options": options})
+
+    assert response.status_code == 422

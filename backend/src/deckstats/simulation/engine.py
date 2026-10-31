@@ -17,37 +17,24 @@ from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 
-from deckstats.deck.odds import MAX_TURN, OPENING_HAND
+from deckstats.deck.odds import OPENING_HAND
 from deckstats.simulation.estimate import Estimate, estimate
+from deckstats.simulation.keep import BOTTOM_LAND_LIMIT, bottom_cards, count_lands, is_keepable
 from deckstats.simulation.mana import ManaModel, ManaResult, ManaTally
+from deckstats.simulation.options import SimulationOptions
 
-# Com mais terrenos que isto na mão, o London coloca um terreno no fundo; senão, a magia mais cara.
-BOTTOM_LAND_LIMIT = 4
+__all__ = [
+    "BOTTOM_LAND_LIMIT",
+    "MulliganResult",
+    "SimulationOptions",
+    "SimulationResult",
+    "bottom_cards",
+    "count_lands",
+    "is_keepable",
+    "run_simulation",
+]
 
-
-@dataclass(frozen=True, slots=True)
-class SimulationOptions:
-    iterations: int = 10_000
-    seed: int = 0
-    on_the_play: bool = False
-    # Aplica a política de mulligan à mão usada nos turnos. Sem isso, vale a 1ª mão de 7.
-    apply_mulligan: bool = True
-    free_mulligan: bool = True
-    max_mulligans: int = 3
-    keep_min_lands: int = 2
-    keep_max_lands: int = 5
-    keep_max_spell_mv: int = 3
-    max_turn: int = MAX_TURN
-
-    def __post_init__(self) -> None:
-        if self.iterations < 1:
-            raise ValueError("iterations deve ser pelo menos 1")
-        if not 0 <= self.max_mulligans <= OPENING_HAND - 1:
-            raise ValueError(f"max_mulligans deve estar entre 0 e {OPENING_HAND - 1}")
-        if not 0 <= self.keep_min_lands <= self.keep_max_lands <= OPENING_HAND:
-            raise ValueError("limites de terrenos inválidos para uma mão mantível")
-        if not 1 <= self.max_turn <= MAX_TURN:
-            raise ValueError(f"max_turn deve estar entre 1 e {MAX_TURN}")
+_SEED_STRIDE = 1_000_003
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,32 +55,6 @@ class SimulationResult:
     mulligans: MulliganResult | None = None  # M2 (None sem apply_mulligan)
     land_drops: dict[int, Estimate] = field(default_factory=dict)  # M3, por turno
     mana: ManaResult | None = None  # M4 a M6 (None sem modelo de mana)
-
-
-def count_lands(cards: Sequence[int]) -> int:
-    """Terrenos têm código negativo (ver ``simulation.model``)."""
-    return sum(1 for card in cards if card < 0)
-
-
-def is_keepable(hand: Sequence[int], options: SimulationOptions) -> bool:
-    """Terrenos dentro do intervalo e pelo menos uma magia barata."""
-    if not options.keep_min_lands <= count_lands(hand) <= options.keep_max_lands:
-        return False
-    return any(0 <= card <= options.keep_max_spell_mv for card in hand)
-
-
-def bottom_cards(hand: Sequence[int], count: int) -> tuple[list[int], list[int]]:
-    """London: devolve (mão que fica, cartas para o fundo da biblioteca)."""
-    kept = list(hand)
-    bottomed: list[int] = []
-    for _ in range(min(count, len(kept))):
-        if count_lands(kept) > BOTTOM_LAND_LIMIT:
-            card = next(c for c in kept if c < 0)
-        else:
-            card = max(kept)  # a magia mais cara; só terrenos: um terreno
-        kept.remove(card)
-        bottomed.append(card)
-    return kept, bottomed
 
 
 def _choose_land(
@@ -155,7 +116,9 @@ def run_simulation(
 ) -> SimulationResult:
     """Simula ``iterations`` jogos sobre a biblioteca ``deck`` (códigos de ``simulation.model``)."""
     options = options or SimulationOptions()
-    rng = random.Random(options.seed)
+    if options.keep_policy == "castable" and mana is None:
+        raise ValueError("a política 'castable' precisa do modelo de mana")
+    shared_rng = random.Random(options.seed)
     library_size = len(deck)
 
     keepable = 0
@@ -166,22 +129,27 @@ def run_simulation(
     tally = ManaTally(mana, options.max_turn) if mana is not None else None
     base = list(deck)
 
-    for _ in range(options.iterations):
+    for iteration in range(options.iterations):
+        rng = (
+            random.Random(options.seed * _SEED_STRIDE + iteration)
+            if options.paired_seeds
+            else shared_rng
+        )
         cards = base[:]
         rng.shuffle(cards)
         hand = cards[:OPENING_HAND]
         first_hand_lands[count_lands(hand)] += 1
-        keepable += is_keepable(hand, options)
+        keepable += is_keepable(hand, options, mana)
 
         library = cards[OPENING_HAND:]
         if options.apply_mulligan:
             mulligans = 0
-            while not is_keepable(hand, options) and mulligans < options.max_mulligans:
+            while not is_keepable(hand, options, mana) and mulligans < options.max_mulligans:
                 mulligans += 1
                 rng.shuffle(cards)
                 hand = cards[:OPENING_HAND]
             to_bottom = max(0, mulligans - 1) if options.free_mulligan else mulligans
-            hand, bottomed = bottom_cards(hand, to_bottom)
+            hand, bottomed = bottom_cards(hand, to_bottom, mana)
             library = cards[OPENING_HAND:] + bottomed
             mulligan_counts[mulligans] += 1
             final_hand_total += len(hand)

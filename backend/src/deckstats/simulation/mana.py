@@ -142,6 +142,22 @@ class Target:
 
 
 @dataclass(frozen=True, slots=True)
+class SpellType:
+    """Magia que a simulação enxerga: custo e o papel que ela tem na mão inicial.
+
+    ``ramp``: pedra, criatura de mana, magia que busca terreno ou jogada extra de terreno
+    (rituais de uso único não contam). ``cantrip``: instantâneo ou feitiço barato que
+    compra carta. As duas marcas vêm da classificação por regras (F4).
+    """
+
+    name: str
+    mana_value: int
+    cost: ManaCost
+    ramp: bool = False
+    cantrip: bool = False
+
+
+@dataclass(frozen=True, slots=True)
 class ManaModel:
     land_types: tuple[LandType, ...]
     targets: tuple[Target, ...]
@@ -149,6 +165,9 @@ class ManaModel:
     plan_turn: int
     needed_colors: frozenset[str]
     unknown_mana_lands: tuple[str, ...] = ()
+    # Com a tabela de magias, os códigos não negativos da biblioteca são índices nela (e não
+    # mais o valor de mana). Vazia: códigos legados, em que o código é o próprio valor de mana.
+    spells: tuple[SpellType, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

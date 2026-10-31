@@ -8,6 +8,7 @@ from deckstats.api.analyses import EXAMPLE_DECKLIST, MAX_DECKLIST_CHARS, IssueOu
 from deckstats.api.deps import get_card_repository
 from deckstats.catalog.repository import CardRepository
 from deckstats.simulation.engine import SimulationOptions, SimulationResult
+from deckstats.simulation.options import KeepPolicy
 from deckstats.simulation.service import EmptyLibraryError, simulate_decklist
 
 router = APIRouter(tags=["simulations"])
@@ -31,6 +32,26 @@ class SimulationOptionsIn(BaseModel):
     keep_max_lands: int = Field(5, ge=0, le=7, description="Máximo de terrenos numa mão mantível.")
     keep_max_spell_mv: int = Field(
         3, ge=0, le=20, description="Uma mão mantível precisa de uma magia com MV até este valor."
+    )
+    keep_policy: KeepPolicy = Field(
+        "castable",
+        description=(
+            "`castable`: só conta o que dá para conjurar com os terrenos da mão; rampa castável "
+            "vale como terreno extra e cantrips baratos como fração de terreno. "
+            "`simple`: terrenos no intervalo e uma magia de MV baixo, sem olhar a castabilidade."
+        ),
+    )
+    keep_min_effective: float = Field(
+        2.5,
+        ge=0,
+        le=7,
+        description="(castable) Mínimo de terrenos efetivos: reais + rampa + fração dos cantrips.",
+    )
+    ramp_credit_cap: int = Field(
+        2, ge=0, le=4, description="(castable) Quantas rampas castáveis contam como terreno."
+    )
+    cantrip_weight: float = Field(
+        0.5, ge=0, le=1, description="(castable) Quanto de terreno vale cada cantrip (até 2)."
     )
     count_mdfc_lands: bool = Field(True, description="Conta MDFC com terreno atrás como terreno.")
     costs: list[Annotated[str, Field(pattern=COST_PATTERN)]] = Field(
@@ -56,6 +77,10 @@ class SimulationOptionsIn(BaseModel):
             keep_min_lands=self.keep_min_lands,
             keep_max_lands=self.keep_max_lands,
             keep_max_spell_mv=self.keep_max_spell_mv,
+            keep_policy=self.keep_policy,
+            keep_min_effective=self.keep_min_effective,
+            ramp_credit_cap=self.ramp_credit_cap,
+            cantrip_weight=self.cantrip_weight,
         )
 
 
@@ -224,6 +249,10 @@ def create_simulation_from_text(
     keep_min_lands: Annotated[int, Query(ge=0, le=7)] = 2,
     keep_max_lands: Annotated[int, Query(ge=0, le=7)] = 5,
     keep_max_spell_mv: Annotated[int, Query(ge=0, le=20)] = 3,
+    keep_policy: KeepPolicy = "castable",
+    keep_min_effective: Annotated[float, Query(ge=0, le=7)] = 2.5,
+    ramp_credit_cap: Annotated[int, Query(ge=0, le=4)] = 2,
+    cantrip_weight: Annotated[float, Query(ge=0, le=1)] = 0.5,
     count_mdfc_lands: bool = True,
     costs: Annotated[
         list[str] | None, Query(max_length=MAX_COSTS, description="Custos extras, como {2}{U}{U}.")
@@ -240,6 +269,10 @@ def create_simulation_from_text(
             keep_min_lands=keep_min_lands,
             keep_max_lands=keep_max_lands,
             keep_max_spell_mv=keep_max_spell_mv,
+            keep_policy=keep_policy,
+            keep_min_effective=keep_min_effective,
+            ramp_credit_cap=ramp_credit_cap,
+            cantrip_weight=cantrip_weight,
             count_mdfc_lands=count_mdfc_lands,
             costs=costs or [],
         )
