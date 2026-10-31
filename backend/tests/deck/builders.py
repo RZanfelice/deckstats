@@ -19,12 +19,13 @@ def make_face(
     keywords: Sequence[str] = (),
     text: str | None = None,
     position: int = 0,
+    produced_mana: Sequence[str] = (),
 ) -> FaceRecord:
     return FaceRecord(
         position=position, side=None, name=name, mana_cost=mana_cost, mana_value=mana_value,
         colors=list(colors), type_line=" ".join(types), supertypes=list(supertypes),
         types=list(types), subtypes=list(subtypes), text=text, power=None, toughness=None,
-        loyalty=None, defense=None, keywords=list(keywords), produced_mana=[],
+        loyalty=None, defense=None, keywords=list(keywords), produced_mana=list(produced_mana),
     )  # fmt: skip
 
 
@@ -47,12 +48,13 @@ def make_card(
     oracle_id: str | None = None,
     is_funny: bool = False,
     edhrec_rank: int | None = None,
+    produced_mana: Sequence[str] = (),
 ) -> CardRecord:
     if faces is None:
         faces = [
             make_face(
                 name, mana_cost=mana_cost, mana_value=mana_value, colors=colors, types=types,
-                supertypes=supertypes, subtypes=subtypes, keywords=keywords, text=text,
+                supertypes=supertypes, subtypes=subtypes, keywords=keywords, text=text, produced_mana=produced_mana,
             )
         ]  # fmt: skip
     return CardRecord(
@@ -64,10 +66,18 @@ def make_card(
     )  # fmt: skip
 
 
-def land(name: str = "Forest", *, identity: Sequence[str] = (), basic: bool = True) -> CardRecord:
+def land(
+    name: str = "Forest",
+    *,
+    identity: Sequence[str] = (),
+    basic: bool = True,
+    produces: Sequence[str] = (),
+    text: str | None = None,
+) -> CardRecord:
     return make_card(
-        name, types=("Land",), supertypes=("Basic",) if basic else (), identity=identity
-    )
+        name, types=("Land",), supertypes=("Basic",) if basic else (), identity=identity,
+        produced_mana=produces, text=text,
+    )  # fmt: skip
 
 
 def entry(card: CardRecord, quantity: int = 1, section: Section = "main") -> DeckEntry:

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
 from deckstats import __version__
-from deckstats.api import analyses, health
+from deckstats.api import analyses, health, simulations
 
 
 def create_app() -> FastAPI:
@@ -12,6 +12,7 @@ def create_app() -> FastAPI:
     )
     app.include_router(health.router)
     app.include_router(analyses.router)
+    app.include_router(simulations.router)
     return app
 
 
