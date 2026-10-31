@@ -1,0 +1,84 @@
+1 Anticipate
+1 Auroral Procession
+1 Avenger of Zendikar
+1 Beast Within
+1 Big Score
+1 Chandra, Hope's Beacon
+1 Chord of Calling
+1 Comet Storm
+1 Command Tower
+1 Crop Rotation
+1 Cryptolith Rite
+1 Decisive Denial
+1 Deekah, Fractal Theorist
+1 Deliberate
+1 Demand Answers
+1 Dig Through Time
+1 Double Vision
+1 Earthcraft
+1 Edge of Autumn
+1 Enduring Vitality
+1 Entish Restoration
+1 Eureka Moment
+1 Exotic Orchard
+1 Expansion/Explosion
+1 Farseek
+1 Fiery Cannonade
+1 Flame Sweep
+6 Forest
+1 Frostboil Snarl
+1 Gaea's Cradle
+1 Glimpse the Core
+1 Growth Spiral
+1 Harrow
+1 Hinterland Harbor
+1 Holdout Settlement
+1 Impulse
+1 Into the North
+8 Island
+1 Joint Exploration
+1 Karplusan Forest
+1 Laughing Mad
+1 Leadership Vacuum
+1 Memory Deluge
+6 Mountain
+1 Narset's Reversal
+1 Nature's Lore
+1 Planar Genesis
+1 Prismari Charm
+1 Prismari Command
+1 Prismari Pianist
+1 Prismari, the Inspiration
+1 Raiding Schemes
+1 Rampant Growth
+1 Rashmi, Eternities Crafter
+1 Relic of Legends
+1 Rootbound Crag
+1 Sakura-Tribe Elder
+1 Sazacap's Brew
+1 Scute Swarm
+1 Search for Tomorrow
+1 Seedborn Muse
+1 Shivan Reef
+1 Silundi Vision
+1 Soul's Fire
+1 Springleaf Drum
+1 Stomping Ground
+1 Storm-Kiln Artist
+1 Studious First-Year
+1 Sulfur Falls
+1 Sunken Palace
+1 Swarm Intelligence
+1 Talrand, Sky Summoner
+1 Temple of the False God
+1 Thirst for Discovery
+1 Thrill of Possibility
+1 Twinning Staff
+1 Unexpected Windfall
+1 Veyran, Voice of Duality
+1 Vineglimmer Snarl
+1 Wort, the Raidmother
+1 Yavimaya Coast
+1 Young Pyromancer
+
+1 Kalamax, the Stormsire

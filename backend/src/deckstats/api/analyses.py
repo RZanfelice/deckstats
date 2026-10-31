@@ -1,8 +1,8 @@
 from dataclasses import asdict
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Body, Depends, Query
+from pydantic import BaseModel, ConfigDict, Field
 
 from deckstats.api.deps import get_card_repository
 from deckstats.catalog.repository import CardRepository
@@ -12,6 +12,7 @@ from deckstats.deck.stats import StatsOptions
 router = APIRouter(tags=["analyses"])
 
 MAX_DECKLIST_CHARS = 20_000
+EXAMPLE_DECKLIST = "Commander\n1 Atraxa, Praetors' Voice\n\nDeck\n1 Sol Ring\n98 Forest"
 
 
 class AnalysisOptions(BaseModel):
@@ -21,8 +22,15 @@ class AnalysisOptions(BaseModel):
 
 
 class AnalysisRequest(BaseModel):
+    model_config = ConfigDict(json_schema_extra={"examples": [{"decklist": EXAMPLE_DECKLIST}]})
+
     decklist: str = Field(
-        min_length=1, max_length=MAX_DECKLIST_CHARS, description="Lista em texto."
+        min_length=1,
+        max_length=MAX_DECKLIST_CHARS,
+        description=(
+            "A lista inteira em UMA string. Em JSON, as quebras de linha precisam ser `\\n`. "
+            "Para colar uma lista direto, use `POST /analyses/text`."
+        ),
     )
     options: AnalysisOptions = Field(default_factory=AnalysisOptions)
 
@@ -114,18 +122,49 @@ def to_response(analysis: Analysis) -> AnalysisResponse:
     )
 
 
+def _analyze(decklist: str, count_mdfc_lands: bool, repository: CardRepository) -> AnalysisResponse:
+    analysis = analyze_decklist(
+        decklist, repository, StatsOptions(count_mdfc_lands=count_mdfc_lands)
+    )
+    return to_response(analysis)
+
+
 @router.post(
     "/analyses",
     response_model=AnalysisResponse,
-    summary="Analisa uma lista de deck (Commander)",
+    summary="Analisa uma lista de deck (JSON)",
 )
 def create_analysis(
     request: AnalysisRequest,
     repository: Annotated[CardRepository, Depends(get_card_repository)],
 ) -> AnalysisResponse:
-    analysis = analyze_decklist(
-        request.decklist,
-        repository,
-        StatsOptions(count_mdfc_lands=request.options.count_mdfc_lands),
-    )
-    return to_response(analysis)
+    return _analyze(request.decklist, request.options.count_mdfc_lands, repository)
+
+
+@router.post(
+    "/analyses/text",
+    response_model=AnalysisResponse,
+    summary="Analisa uma lista de deck colada como texto puro",
+    description=(
+        "Igual a `POST /analyses`, mas o corpo é o próprio texto da lista "
+        "(`Content-Type: text/plain`), exatamente como exportado do Moxfield, Archidekt, "
+        "Arena ou MTGO. Não precisa escapar nada. A opção vai na query string."
+    ),
+)
+def create_analysis_from_text(
+    decklist: Annotated[
+        str,
+        Body(
+            media_type="text/plain",
+            min_length=1,
+            max_length=MAX_DECKLIST_CHARS,
+            description="A lista de deck, uma carta por linha.",
+            examples=[EXAMPLE_DECKLIST],
+        ),
+    ],
+    repository: Annotated[CardRepository, Depends(get_card_repository)],
+    count_mdfc_lands: Annotated[
+        bool, Query(description="Conta MDFC com terreno atrás no total de terrenos.")
+    ] = True,
+) -> AnalysisResponse:
+    return _analyze(decklist, count_mdfc_lands, repository)
