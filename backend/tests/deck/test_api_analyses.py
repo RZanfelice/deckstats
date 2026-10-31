@@ -243,3 +243,36 @@ def test_land_count_is_null_when_there_is_no_critical_turn(client: TestClient) -
 
     assert body["land_odds"]["critical_turn"] is None
     assert body["land_odds"]["land_count"] is None
+
+
+CATEGORIZED = "Commander\n1 Elf Chief\nDeck\n1 Sol Ring\n1 Swords to Plowshares\n97 Forest\n"
+
+
+def test_response_counts_the_deck_by_category(client: TestClient) -> None:
+    categories = post(client, CATEGORIZED)["categories"]
+
+    by_name = {c["category"]: c for c in categories["categories"]}
+    assert categories["main_cards"] == 99
+    assert categories["classifier_version"].startswith("rules-")
+    assert [c["category"] for c in categories["categories"]][:3] == ["ramp", "card_draw", "tutor"]
+    assert by_name["ramp"]["count"] == 1
+    assert by_name["ramp"]["cards"] == ["Sol Ring"]
+    assert by_name["ramp"]["percent"] == pytest.approx(1 / 99)
+    assert by_name["removal"]["count"] == 1
+    assert by_name["interaction"]["count"] == 1
+    assert by_name["combo_piece"]["supported"] is False
+    assert by_name["combo_piece"]["count"] == 0
+
+
+def test_each_card_lists_its_categories(client: TestClient) -> None:
+    cards = {c["name"]: c for c in post(client, CATEGORIZED)["cards"]}
+
+    assert cards["Sol Ring"]["categories"] == ["ramp"]
+    assert cards["Swords to Plowshares"]["categories"] == ["interaction", "removal"]
+    assert cards["Forest"]["categories"] == []
+
+
+def test_the_commanders_categories_are_reported_apart(client: TestClient) -> None:
+    categories = post(client, CATEGORIZED)["categories"]
+
+    assert categories["commander_categories"] == {"Elf Chief": []}

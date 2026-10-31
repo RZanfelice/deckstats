@@ -37,7 +37,14 @@ def catalog_cards() -> list[CardRecord]:
         ATRAXA,
         make_card("Elf Chief", mana_value=2.0, mana_cost="{1}{G}", colors=("G",), can_be_commander=True),
         make_card("Goblin Chief", colors=("R",), can_be_commander=True),
-        make_card("Sol Ring", mana_value=1.0, mana_cost="{1}", types=("Artifact",), identity=()),
+        make_card(
+            "Sol Ring", mana_value=1.0, mana_cost="{1}", types=("Artifact",), identity=(),
+            text="{T}: Add {C}{C}.", produced_mana=("C",),
+        ),
+        make_card(
+            "Swords to Plowshares", mana_value=1.0, mana_cost="{W}", colors=("W",), types=("Instant",),
+            identity=("W",), text="Exile target creature. Its controller gains life equal to its power.",
+        ),
         make_card("Cultivate", mana_value=3.0, mana_cost="{2}{G}", colors=("G",), types=("Sorcery",)),
         make_card("Lightning Bolt", mana_value=1.0, mana_cost="{R}", colors=("R",), types=("Instant",)),
         make_card("Time Walk", mana_value=2.0, mana_cost="{1}{U}", colors=("U",), types=("Sorcery",), legality="banned"),

@@ -88,6 +88,20 @@ Deck
 
 A lista pode vir de Arena, MTGO, Moxfield ou Archidekt (texto colado). A resposta traz estatísticas (terrenos, curva, MV, cores, tipos), as cartas resolvidas e uma lista de `issues` (cartas não encontradas com sugestões, regras de Commander violadas...).
 
+### Simulação e classificação
+
+```bash
+# Simulação Monte Carlo de consistência de mana (mão inicial, mulligan, terrenos, comandante, cores)
+curl -s -X POST "localhost:8000/simulations/text?iterations=10000"   -H 'content-type: text/plain' --data-binary @deck.txt
+
+# Classifica o catálogo por categoria (ramp, card_draw, removal...) e mede contra o conjunto rotulado
+cd backend
+uv run python -m deckstats.classification.cli classify
+uv run python -m deckstats.classification.cli report
+```
+
+A análise (`/analyses`) já devolve a contagem por categoria do deck. Detalhes em `docs/` (não versionado).
+
 ### Qualidade
 
 ```bash

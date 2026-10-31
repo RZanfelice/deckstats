@@ -1,0 +1,484 @@
+{
+  "_comment": "Conjunto-semente de validação do classificador (item 4.4). Rótulos escritos pelo assistente a partir do conhecimento do jogo, ANTES das regras, para serem independentes delas. PRECISA DE REVISÃO HUMANA. Remoção, contramágica e board wipe implicam interação (a avaliação aplica o fecho). Combo Piece não é avaliado: as regras não o suportam.",
+  "labels": {
+    "Sol Ring": [
+      "ramp"
+    ],
+    "Arcane Signet": [
+      "ramp"
+    ],
+    "Mana Crypt": [
+      "ramp"
+    ],
+    "Mind Stone": [
+      "ramp",
+      "card_draw"
+    ],
+    "Thought Vessel": [
+      "ramp"
+    ],
+    "Fellwar Stone": [
+      "ramp"
+    ],
+    "Commander's Sphere": [
+      "ramp",
+      "card_draw"
+    ],
+    "Llanowar Elves": [
+      "ramp"
+    ],
+    "Elvish Mystic": [
+      "ramp"
+    ],
+    "Birds of Paradise": [
+      "ramp"
+    ],
+    "Gilded Goose": [
+      "ramp"
+    ],
+    "Cultivate": [
+      "ramp"
+    ],
+    "Kodama's Reach": [
+      "ramp"
+    ],
+    "Rampant Growth": [
+      "ramp"
+    ],
+    "Farseek": [
+      "ramp"
+    ],
+    "Nature's Lore": [
+      "ramp"
+    ],
+    "Three Visits": [
+      "ramp"
+    ],
+    "Skyshroud Claim": [
+      "ramp"
+    ],
+    "Explosive Vegetation": [
+      "ramp"
+    ],
+    "Boundless Realms": [
+      "ramp"
+    ],
+    "Sakura-Tribe Elder": [
+      "ramp"
+    ],
+    "Wayfarer's Bauble": [
+      "ramp"
+    ],
+    "Burnished Hart": [
+      "ramp"
+    ],
+    "Solemn Simulacrum": [
+      "ramp",
+      "card_draw"
+    ],
+    "Wild Growth": [
+      "ramp"
+    ],
+    "Utopia Sprawl": [
+      "ramp"
+    ],
+    "Exploration": [
+      "ramp"
+    ],
+    "Azusa, Lost but Seeking": [
+      "ramp"
+    ],
+    "Oracle of Mul Daya": [
+      "ramp"
+    ],
+    "Seedborn Muse": [
+      "ramp"
+    ],
+    "Mana Reflection": [
+      "ramp"
+    ],
+    "Cryptolith Rite": [
+      "ramp"
+    ],
+    "Dark Ritual": [
+      "ramp"
+    ],
+    "Cabal Ritual": [
+      "ramp"
+    ],
+    "Jeweled Lotus": [
+      "ramp"
+    ],
+    "The Great Henge": [
+      "ramp",
+      "card_draw"
+    ],
+    "Mana Drain": [
+      "counterspell",
+      "ramp"
+    ],
+    "Rhystic Study": [
+      "card_draw"
+    ],
+    "Mystic Remora": [
+      "card_draw"
+    ],
+    "Phyrexian Arena": [
+      "card_draw"
+    ],
+    "Sylvan Library": [
+      "card_draw"
+    ],
+    "Harmonize": [
+      "card_draw"
+    ],
+    "Brainstorm": [
+      "card_draw"
+    ],
+    "Ponder": [
+      "card_draw"
+    ],
+    "Preordain": [
+      "card_draw"
+    ],
+    "Opt": [
+      "card_draw"
+    ],
+    "Dig Through Time": [
+      "card_draw"
+    ],
+    "Fact or Fiction": [
+      "card_draw"
+    ],
+    "Night's Whisper": [
+      "card_draw"
+    ],
+    "Read the Bones": [
+      "card_draw"
+    ],
+    "Blue Sun's Zenith": [
+      "card_draw"
+    ],
+    "Windfall": [
+      "card_draw"
+    ],
+    "Wheel of Fortune": [
+      "card_draw"
+    ],
+    "Skullclamp": [
+      "card_draw"
+    ],
+    "Mulldrifter": [
+      "card_draw"
+    ],
+    "Beast Whisperer": [
+      "card_draw"
+    ],
+    "Guardian Project": [
+      "card_draw"
+    ],
+    "Sensei's Divining Top": [
+      "card_draw"
+    ],
+    "Demonic Tutor": [
+      "tutor"
+    ],
+    "Vampiric Tutor": [
+      "tutor"
+    ],
+    "Mystical Tutor": [
+      "tutor"
+    ],
+    "Enlightened Tutor": [
+      "tutor"
+    ],
+    "Worldly Tutor": [
+      "tutor"
+    ],
+    "Diabolic Tutor": [
+      "tutor"
+    ],
+    "Eladamri's Call": [
+      "tutor"
+    ],
+    "Fauna Shaman": [
+      "tutor"
+    ],
+    "Survival of the Fittest": [
+      "tutor"
+    ],
+    "Idyllic Tutor": [
+      "tutor"
+    ],
+    "Imperial Seal": [
+      "tutor"
+    ],
+    "Gamble": [
+      "tutor"
+    ],
+    "Entomb": [
+      "tutor"
+    ],
+    "Swords to Plowshares": [
+      "removal"
+    ],
+    "Path to Exile": [
+      "removal"
+    ],
+    "Doom Blade": [
+      "removal"
+    ],
+    "Go for the Throat": [
+      "removal"
+    ],
+    "Murder": [
+      "removal"
+    ],
+    "Cast Down": [
+      "removal"
+    ],
+    "Terminate": [
+      "removal"
+    ],
+    "Lightning Bolt": [
+      "removal"
+    ],
+    "Beast Within": [
+      "removal"
+    ],
+    "Generous Gift": [
+      "removal"
+    ],
+    "Pongify": [
+      "removal"
+    ],
+    "Rapid Hybridization": [
+      "removal"
+    ],
+    "Anguished Unmaking": [
+      "removal"
+    ],
+    "Vindicate": [
+      "removal"
+    ],
+    "Assassin's Trophy": [
+      "removal"
+    ],
+    "Utter End": [
+      "removal"
+    ],
+    "Chaos Warp": [
+      "removal"
+    ],
+    "Wrath of God": [
+      "board_wipe"
+    ],
+    "Damnation": [
+      "board_wipe"
+    ],
+    "Blasphemous Act": [
+      "board_wipe"
+    ],
+    "Toxic Deluge": [
+      "board_wipe"
+    ],
+    "Farewell": [
+      "board_wipe"
+    ],
+    "Austere Command": [
+      "board_wipe"
+    ],
+    "Anger of the Gods": [
+      "board_wipe"
+    ],
+    "Cyclonic Rift": [
+      "board_wipe"
+    ],
+    "Counterspell": [
+      "counterspell"
+    ],
+    "Negate": [
+      "counterspell"
+    ],
+    "Swan Song": [
+      "counterspell"
+    ],
+    "Force of Will": [
+      "counterspell"
+    ],
+    "Mana Leak": [
+      "counterspell"
+    ],
+    "Cryptic Command": [
+      "counterspell",
+      "card_draw"
+    ],
+    "Control Magic": [
+      "interaction"
+    ],
+    "Pacifism": [
+      "interaction"
+    ],
+    "Into the Roil": [
+      "interaction",
+      "card_draw"
+    ],
+    "Vapor Snag": [
+      "interaction"
+    ],
+    "Mind Rot": [
+      "interaction"
+    ],
+    "Heroic Intervention": [
+      "protection"
+    ],
+    "Teferi's Protection": [
+      "protection"
+    ],
+    "Swiftfoot Boots": [
+      "protection"
+    ],
+    "Lightning Greaves": [
+      "protection"
+    ],
+    "Flawless Maneuver": [
+      "protection"
+    ],
+    "Ephemerate": [
+      "protection"
+    ],
+    "Mother of Runes": [
+      "protection"
+    ],
+    "Avacyn, Angel of Hope": [
+      "protection"
+    ],
+    "Eternal Witness": [
+      "recursion"
+    ],
+    "Regrowth": [
+      "recursion"
+    ],
+    "Raise Dead": [
+      "recursion"
+    ],
+    "Reanimate": [
+      "recursion"
+    ],
+    "Animate Dead": [
+      "recursion"
+    ],
+    "Necromancy": [
+      "recursion"
+    ],
+    "Unearth": [
+      "recursion"
+    ],
+    "Snapcaster Mage": [
+      "recursion"
+    ],
+    "Sun Titan": [
+      "recursion"
+    ],
+    "Avenger of Zendikar": [
+      "token_generator"
+    ],
+    "Raise the Alarm": [
+      "token_generator"
+    ],
+    "Secure the Wastes": [
+      "token_generator"
+    ],
+    "Hornet Queen": [
+      "token_generator"
+    ],
+    "Grave Titan": [
+      "token_generator"
+    ],
+    "Young Pyromancer": [
+      "token_generator"
+    ],
+    "Talrand, Sky Summoner": [
+      "token_generator"
+    ],
+    "Smothering Tithe": [
+      "treasure_generator"
+    ],
+    "Dockside Extortionist": [
+      "treasure_generator"
+    ],
+    "Pitiless Plunderer": [
+      "treasure_generator"
+    ],
+    "Goldspan Dragon": [
+      "treasure_generator"
+    ],
+    "Viscera Seer": [
+      "sacrifice_outlet"
+    ],
+    "Carrion Feeder": [
+      "sacrifice_outlet"
+    ],
+    "Altar of Dementia": [
+      "sacrifice_outlet"
+    ],
+    "Ashnod's Altar": [
+      "sacrifice_outlet"
+    ],
+    "Phyrexian Altar": [
+      "sacrifice_outlet"
+    ],
+    "Goblin Bombardment": [
+      "sacrifice_outlet"
+    ],
+    "Yahenni, Undying Partisan": [
+      "sacrifice_outlet"
+    ],
+    "Woe Strider": [
+      "sacrifice_outlet",
+      "token_generator"
+    ],
+    "Thassa's Oracle": [
+      "win_condition"
+    ],
+    "Laboratory Maniac": [
+      "win_condition"
+    ],
+    "Jace, Wielder of Mysteries": [
+      "win_condition",
+      "card_draw"
+    ],
+    "Craterhoof Behemoth": [
+      "win_condition"
+    ],
+    "Overrun": [
+      "win_condition"
+    ],
+    "Exsanguinate": [
+      "win_condition"
+    ],
+    "Approach of the Second Sun": [
+      "win_condition"
+    ],
+    "Door to Nothingness": [
+      "win_condition"
+    ],
+    "Grizzly Bears": [],
+    "Serra Angel": [],
+    "Shivan Dragon": [],
+    "Giant Growth": [],
+    "Rancor": [],
+    "Island": [],
+    "Forest": [],
+    "Command Tower": [],
+    "Evolving Wilds": [],
+    "Mana Confluence": [],
+    "Reliquary Tower": []
+  },
+  "_corrections": [
+    "Into the Roil: acrescentado card_draw (o texto compra uma carta se tiver kicker).",
+    "Woe Strider: acrescentado token_generator (o texto cria um Goat 0/1 ao entrar).",
+    "Jace, Wielder of Mysteries: acrescentado card_draw (o +1 compra uma carta e o -8 compra sete).",
+    "Divergências ambíguas deixadas como estão, sem ajustar o gabarito: Goldspan Dragon (ramp: Tesouros valem 2 manas) e Goblin Bombardment (removal: dano 1 repetível)."
+  ]
+}

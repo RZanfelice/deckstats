@@ -62,6 +62,9 @@ class CardOut(BaseModel):
     alternatives: int
     mana_value: float
     commander_legality: str
+    categories: list[str] = Field(
+        description="Categorias da carta (ramp, card_draw...), incluindo as implicadas."
+    )
 
 
 class UnresolvedOut(BaseModel):
@@ -100,6 +103,21 @@ class StatsOut(BaseModel):
     color_identity: list[str]
     types: dict[str, int]
     permanents: dict[str, int]
+
+
+class CategoryCountOut(BaseModel):
+    category: str
+    supported: bool = Field(description="Falso para categorias que as regras não decidem.")
+    count: int = Field(description="Cópias no deck principal.")
+    percent: float = Field(description="Fração do deck principal, de 0 a 1.")
+    cards: list[str]
+
+
+class CategoriesOut(BaseModel):
+    classifier_version: str
+    main_cards: int
+    categories: list[CategoryCountOut]
+    commander_categories: dict[str, list[str]]
 
 
 class CriticalTurnOut(BaseModel):
@@ -172,6 +190,7 @@ class AnalysisResponse(BaseModel):
     options: AnalysisOptions
     stats: StatsOut
     land_odds: LandOddsOut | None
+    categories: CategoriesOut
     cards: list[CardOut]
     unresolved: list[UnresolvedOut]
     issues: list[IssueOut]
@@ -187,6 +206,7 @@ def to_response(analysis: Analysis) -> AnalysisResponse:
         land_odds=(
             LandOddsOut.model_validate(asdict(analysis.land_odds)) if analysis.land_odds else None
         ),
+        categories=CategoriesOut.model_validate(asdict(analysis.categories)),
         cards=[
             CardOut(
                 oracle_id=item.card.oracle_id,
@@ -198,6 +218,7 @@ def to_response(analysis: Analysis) -> AnalysisResponse:
                 alternatives=item.alternatives,
                 mana_value=item.card.mana_value,
                 commander_legality=item.card.commander_legality,
+                categories=sorted(item.categories),
             )
             for item in analysis.cards
         ],

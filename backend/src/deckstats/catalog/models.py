@@ -111,3 +111,36 @@ class CardFace(Base):
     produced_mana: Mapped[list[str]] = mapped_column(StringList)
 
     card: Mapped[OracleCard] = relationship(back_populates="faces")
+
+
+class CardCategory(Base):
+    """Evidência de que a carta pertence a uma categoria, produzida por uma versão do classificador.
+
+    Só guarda as categorias ativadas por regras (explicáveis); as implicadas, como
+    interação a partir de remoção, são derivadas na leitura.
+    """
+
+    __tablename__ = "card_category"
+    __table_args__ = (
+        UniqueConstraint("oracle_id", "classifier_version", "category", "rule", "face"),
+        Index("ix_card_category_version_category", "classifier_version", "category"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    oracle_id: Mapped[str] = mapped_column(ForeignKey("oracle_card.oracle_id", ondelete="CASCADE"))
+    classifier_version: Mapped[str] = mapped_column(String(32))
+    category: Mapped[str] = mapped_column(String(32))
+    rule: Mapped[str] = mapped_column(String(32))
+    face: Mapped[str] = mapped_column(String(255))
+    excerpt: Mapped[str] = mapped_column(Text)
+
+
+class ClassificationRun(Base):
+    """Uma execução do classificador sobre o catálogo (uma linha por versão)."""
+
+    __tablename__ = "classification_run"
+
+    classifier_version: Mapped[str] = mapped_column(String(32), primary_key=True)
+    run_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    card_count: Mapped[int] = mapped_column(Integer)
+    labeled_count: Mapped[int] = mapped_column(Integer)

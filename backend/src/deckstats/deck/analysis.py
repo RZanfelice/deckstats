@@ -4,6 +4,8 @@ from dataclasses import dataclass, field, replace
 
 from deckstats.catalog.records import CardRecord
 from deckstats.catalog.repository import CardRepository, MatchedBy
+from deckstats.classification.classifier import classify_card
+from deckstats.classification.stats import CategoryStats, compute_category_stats
 from deckstats.deck.formats import CommanderRules, FormatRules, Issue, Severity
 from deckstats.deck.model import Deck, DeckEntry, Section
 from deckstats.deck.odds import LandOdds, compute_land_odds
@@ -22,6 +24,7 @@ class ResolvedCard:
     card: CardRecord
     matched_by: MatchedBy
     alternatives: int
+    categories: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,6 +42,7 @@ class Analysis:
     deck: Deck
     stats: DeckStats
     land_odds: LandOdds | None
+    categories: CategoryStats
     issues: list[Issue]
     cards: list[ResolvedCard]
     unresolved: list[UnresolvedCard]
@@ -111,6 +115,7 @@ def analyze_decklist(
                     resolution.card,
                     resolution.matched_by,
                     resolution.alternatives,
+                    classify_card(resolution.card).categories,
                 )
             )
 
@@ -158,6 +163,7 @@ def analyze_decklist(
             commander_weight=options.commander_weight,
             on_the_play=options.on_the_play,
         ),
+        categories=compute_category_stats(deck),
         issues=issues,
         cards=resolved,
         unresolved=unresolved,
