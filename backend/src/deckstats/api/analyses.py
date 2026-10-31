@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from deckstats.api.deps import get_card_repository
 from deckstats.catalog.repository import CardRepository
 from deckstats.deck.analysis import Analysis, analyze_decklist
+from deckstats.deck.odds import DEFAULT_COMMANDER_WEIGHT
 from deckstats.deck.stats import StatsOptions
 
 router = APIRouter(tags=["analyses"])
@@ -18,6 +19,22 @@ EXAMPLE_DECKLIST = "Commander\n1 Atraxa, Praetors' Voice\n\nDeck\n1 Sol Ring\n98
 class AnalysisOptions(BaseModel):
     count_mdfc_lands: bool = Field(
         default=True, description="Conta MDFC com terreno atrás no total de terrenos."
+    )
+    commander_weight: float = Field(
+        default=DEFAULT_COMMANDER_WEIGHT,
+        ge=0,
+        le=1,
+        description=(
+            "Peso do custo do comandante no turno crítico; o restante vai para o MV médio "
+            "das demais cartas."
+        ),
+    )
+    on_the_play: bool = Field(
+        default=False,
+        description=(
+            "Começa sem comprar no turno 1 (jogo de 2 jogadores). "
+            "Em Commander com mais de 2 jogadores todos compram, que é o padrão."
+        ),
     )
 
 
@@ -85,12 +102,76 @@ class StatsOut(BaseModel):
     permanents: dict[str, int]
 
 
+class CriticalTurnOut(BaseModel):
+    raw: float = Field(description="Valor antes de arredondar.")
+    turn: int
+    commander_mana_value: float | None
+    average_mana_value: float | None
+    commander_weight: float = Field(
+        description="Peso efetivamente usado (0 ou 1 se faltou um insumo)."
+    )
+
+
+class TurnOddsOut(BaseModel):
+    turn: int
+    cards_seen: int
+    expected_lands: float
+    p_land_drops: float = Field(
+        description="Chance de ter pelo menos `turn` terrenos entre as cartas vistas."
+    )
+    p_at_least: dict[int, float] = Field(
+        description="Chance de ter pelo menos k terrenos, k de 1 a 10."
+    )
+
+
+class LandCountPointOut(BaseModel):
+    lands: int
+    delta: int = Field(description="Diferença para os terrenos atuais do deck.")
+    p_land_drops: float
+
+
+class LandRequirementOut(BaseModel):
+    target: float
+    lands: int | None = Field(
+        description="Menor número de terrenos que atinge a meta; nulo se nem a biblioteca basta."
+    )
+    delta: int | None = Field(
+        description="Terrenos a adicionar (positivo) ou sobrando (negativo) em relação ao deck."
+    )
+
+
+class LandCountAnalysisOut(BaseModel):
+    turn: int = Field(description="Turno crítico usado.")
+    cards_seen: int
+    current_lands: int
+    current_probability: float = Field(
+        description="Chance de não perder nenhum terreno até o turno crítico (terrenos atuais)."
+    )
+    sensitivity: list[LandCountPointOut] = Field(
+        description="A mesma chance com 5 terrenos a menos até 5 a mais que o deck atual."
+    )
+    required: list[LandRequirementOut] = Field(
+        description="Terrenos necessários para atingir 70%, 80% e 90%."
+    )
+
+
+class LandOddsOut(BaseModel):
+    library_size: int
+    lands_in_library: int
+    on_the_play: bool
+    critical_turn: CriticalTurnOut | None
+    by_turn: list[TurnOddsOut]
+    at_critical_turn: TurnOddsOut | None
+    land_count: LandCountAnalysisOut | None
+
+
 class AnalysisResponse(BaseModel):
     format: str
     commander_inferred: bool
     commanders: list[str]
     options: AnalysisOptions
     stats: StatsOut
+    land_odds: LandOddsOut | None
     cards: list[CardOut]
     unresolved: list[UnresolvedOut]
     issues: list[IssueOut]
@@ -101,8 +182,11 @@ def to_response(analysis: Analysis) -> AnalysisResponse:
         format=analysis.format,
         commander_inferred=analysis.commander_inferred,
         commanders=[entry.card.name for entry in analysis.deck.commanders],
-        options=AnalysisOptions(count_mdfc_lands=analysis.options.count_mdfc_lands),
+        options=AnalysisOptions(**asdict(analysis.options)),
         stats=StatsOut.model_validate(asdict(analysis.stats)),
+        land_odds=(
+            LandOddsOut.model_validate(asdict(analysis.land_odds)) if analysis.land_odds else None
+        ),
         cards=[
             CardOut(
                 oracle_id=item.card.oracle_id,
@@ -122,10 +206,10 @@ def to_response(analysis: Analysis) -> AnalysisResponse:
     )
 
 
-def _analyze(decklist: str, count_mdfc_lands: bool, repository: CardRepository) -> AnalysisResponse:
-    analysis = analyze_decklist(
-        decklist, repository, StatsOptions(count_mdfc_lands=count_mdfc_lands)
-    )
+def _analyze(
+    decklist: str, options: AnalysisOptions, repository: CardRepository
+) -> AnalysisResponse:
+    analysis = analyze_decklist(decklist, repository, StatsOptions(**options.model_dump()))
     return to_response(analysis)
 
 
@@ -138,7 +222,7 @@ def create_analysis(
     request: AnalysisRequest,
     repository: Annotated[CardRepository, Depends(get_card_repository)],
 ) -> AnalysisResponse:
-    return _analyze(request.decklist, request.options.count_mdfc_lands, repository)
+    return _analyze(request.decklist, request.options, repository)
 
 
 @router.post(
@@ -166,5 +250,17 @@ def create_analysis_from_text(
     count_mdfc_lands: Annotated[
         bool, Query(description="Conta MDFC com terreno atrás no total de terrenos.")
     ] = True,
+    commander_weight: Annotated[
+        float,
+        Query(ge=0, le=1, description="Peso do custo do comandante no turno crítico."),
+    ] = DEFAULT_COMMANDER_WEIGHT,
+    on_the_play: Annotated[
+        bool, Query(description="Começa sem comprar no turno 1 (jogo de 2 jogadores).")
+    ] = False,
 ) -> AnalysisResponse:
-    return _analyze(decklist, count_mdfc_lands, repository)
+    options = AnalysisOptions(
+        count_mdfc_lands=count_mdfc_lands,
+        commander_weight=commander_weight,
+        on_the_play=on_the_play,
+    )
+    return _analyze(decklist, options, repository)

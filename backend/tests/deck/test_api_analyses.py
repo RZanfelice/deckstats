@@ -65,9 +65,17 @@ def test_mdfc_option_is_configurable_and_on_by_default(client: TestClient) -> No
     default = post(client, text)
     off = post(client, text, count_mdfc_lands=False)
 
-    assert default["options"] == {"count_mdfc_lands": True}
+    assert default["options"] == {
+        "count_mdfc_lands": True,
+        "commander_weight": 0.6,
+        "on_the_play": False,
+    }
     assert default["stats"]["lands"]["total"] == 99
-    assert off["options"] == {"count_mdfc_lands": False}
+    assert off["options"] == {
+        "count_mdfc_lands": False,
+        "commander_weight": 0.6,
+        "on_the_play": False,
+    }
     assert off["stats"]["lands"]["total"] == 90
 
 
@@ -118,9 +126,17 @@ def test_text_endpoint_reads_the_mdfc_option_from_the_query_string(client: TestC
     default = post_text(client, text).json()
     off = post_text(client, text, "?count_mdfc_lands=false").json()
 
-    assert default["options"] == {"count_mdfc_lands": True}
+    assert default["options"] == {
+        "count_mdfc_lands": True,
+        "commander_weight": 0.6,
+        "on_the_play": False,
+    }
     assert default["stats"]["lands"]["total"] == 99
-    assert off["options"] == {"count_mdfc_lands": False}
+    assert off["options"] == {
+        "count_mdfc_lands": False,
+        "commander_weight": 0.6,
+        "on_the_play": False,
+    }
     assert off["stats"]["lands"]["total"] == 90
 
 
@@ -144,3 +160,86 @@ def test_json_endpoint_rejects_raw_newlines_inside_the_string(client: TestClient
 
     assert response.status_code == 422
     assert response.json()["detail"][0]["type"] == "json_invalid"
+
+
+MIXED = "Commander\n1 Atraxa, Praetors' Voice\nDeck\n36 Forest\n63 Cultivate\n"
+
+
+def test_response_includes_the_land_odds_and_critical_turn(client: TestClient) -> None:
+    odds = post(client, MIXED)["land_odds"]
+
+    assert (odds["library_size"], odds["lands_in_library"], odds["on_the_play"]) == (99, 36, False)
+    assert odds["critical_turn"]["turn"] == 4
+    assert odds["critical_turn"]["commander_weight"] == 0.6
+    assert len(odds["by_turn"]) == 10
+    assert odds["at_critical_turn"] == odds["by_turn"][3]
+    assert sorted(odds["by_turn"][0]["p_at_least"], key=int) == [str(k) for k in range(1, 11)]
+    assert odds["by_turn"][3]["p_land_drops"] == pytest.approx(0.6213, abs=1e-3)
+
+
+def test_json_options_change_the_critical_turn_and_the_draw_convention(client: TestClient) -> None:
+    body = post(client, MIXED, commander_weight=0.0, on_the_play=True)
+
+    assert body["options"] == {
+        "count_mdfc_lands": True,
+        "commander_weight": 0.0,
+        "on_the_play": True,
+    }
+    assert body["land_odds"]["critical_turn"]["raw"] == 3.0
+    assert body["land_odds"]["on_the_play"] is True
+    assert body["land_odds"]["by_turn"][0]["cards_seen"] == 7
+
+
+def test_text_endpoint_reads_the_new_options_from_the_query_string(client: TestClient) -> None:
+    body = post_text(client, MIXED, "?commander_weight=1&on_the_play=true").json()
+
+    assert body["options"]["commander_weight"] == 1.0
+    assert body["options"]["on_the_play"] is True
+    assert body["land_odds"]["critical_turn"]["raw"] == 4.0
+
+
+@pytest.mark.parametrize("weight", [-0.1, 1.5])
+def test_commander_weight_out_of_range_is_rejected(client: TestClient, weight: float) -> None:
+    json_response = client.post(
+        "/analyses", json={"decklist": MIXED, "options": {"commander_weight": weight}}
+    )
+    text_response = post_text(client, MIXED, f"?commander_weight={weight}")
+
+    assert json_response.status_code == 422
+    assert text_response.status_code == 422
+
+
+def test_empty_library_returns_null_land_odds(client: TestClient) -> None:
+    body = post(client, "Commander\n1 Atraxa, Praetors' Voice")
+
+    assert body["land_odds"] is None
+
+
+def test_response_includes_the_land_count_analysis(client: TestClient) -> None:
+    analysis = post(client, MIXED)["land_odds"]["land_count"]
+
+    assert analysis["turn"] == 4
+    assert analysis["current_lands"] == 36
+    assert analysis["current_probability"] == pytest.approx(0.6213, abs=1e-3)
+    assert [point["delta"] for point in analysis["sensitivity"]] == list(range(-5, 6))
+    assert [req["target"] for req in analysis["required"]] == [0.7, 0.8, 0.9]
+    lands = [req["lands"] for req in analysis["required"]]
+    assert lands == sorted(lands)
+    assert all(req["delta"] == req["lands"] - 36 for req in analysis["required"])
+
+
+def test_land_count_follows_the_play_option(client: TestClient) -> None:
+    draw = post(client, MIXED)["land_odds"]["land_count"]
+    play = post(client, MIXED, on_the_play=True)["land_odds"]["land_count"]
+
+    assert play["cards_seen"] == draw["cards_seen"] - 1
+    assert play["current_probability"] < draw["current_probability"]
+
+
+def test_land_count_is_null_when_there_is_no_critical_turn(client: TestClient) -> None:
+    body = post(
+        client, "1 Island"
+    )  # sem comandante e só terreno: não há custo para o turno crítico
+
+    assert body["land_odds"]["critical_turn"] is None
+    assert body["land_odds"]["land_count"] is None

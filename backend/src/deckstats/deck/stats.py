@@ -19,6 +19,7 @@ from statistics import median
 
 from deckstats.catalog.records import CardRecord, FaceRecord
 from deckstats.deck.model import Deck, DeckEntry
+from deckstats.deck.odds import DEFAULT_COMMANDER_WEIGHT
 
 COLORS = ("W", "U", "B", "R", "G")
 CURVE_CAP = 7
@@ -43,6 +44,10 @@ _SYMBOL = re.compile(r"\{([^}]+)\}")
 @dataclass(frozen=True, slots=True)
 class StatsOptions:
     count_mdfc_lands: bool = True
+    # Peso do custo do comandante no turno crítico (o resto vai para o MV médio).
+    commander_weight: float = DEFAULT_COMMANDER_WEIGHT
+    # Jogo de 2 jogadores em que se começa sem comprar no turno 1.
+    on_the_play: bool = False
 
 
 @dataclass(frozen=True, slots=True)

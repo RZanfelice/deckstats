@@ -1,3 +1,5 @@
+import pytest
+
 from deckstats.catalog.repository import SqlCardRepository
 from deckstats.deck.analysis import Analysis, analyze_decklist
 from deckstats.deck.stats import StatsOptions
@@ -167,3 +169,56 @@ def test_top_block_is_not_promoted_when_there_is_no_second_block(
     analysis = analyze_decklist("1 Atraxa, Praetors' Voice\n", repository)
 
     assert analysis.commander_inferred is False
+
+
+MIXED = "Commander\n1 Atraxa, Praetors' Voice\nDeck\n36 Forest\n63 Cultivate\n"
+
+
+def test_land_odds_use_the_library_without_the_commander(repository: SqlCardRepository) -> None:
+    analysis = analyze_decklist(MIXED, repository)
+
+    odds = analysis.land_odds
+    assert odds is not None
+    assert (odds.library_size, odds.lands_in_library) == (99, 36)
+    assert odds.on_the_play is False
+
+
+def test_critical_turn_mixes_the_commander_with_the_average(repository: SqlCardRepository) -> None:
+    analysis = analyze_decklist(MIXED, repository)
+
+    assert analysis.land_odds is not None
+    critical = analysis.land_odds.critical_turn
+    assert critical is not None
+    assert critical.commander_mana_value == 4.0
+    assert critical.average_mana_value == 3.0
+    assert critical.raw == pytest.approx(0.6 * 4 + 0.4 * 3)
+    assert critical.turn == 4
+    # 36 terrenos em 99 cartas, 11 cartas vistas no turno 4 (valor de regressão)
+    assert analysis.land_odds.at_critical_turn is not None
+    assert analysis.land_odds.at_critical_turn.p_land_drops == pytest.approx(0.6213, abs=1e-3)
+
+
+def test_options_flow_into_the_odds(repository: SqlCardRepository) -> None:
+    heavy = analyze_decklist(MIXED, repository, StatsOptions(commander_weight=1.0))
+    play = analyze_decklist(MIXED, repository, StatsOptions(on_the_play=True))
+
+    assert heavy.land_odds is not None and heavy.land_odds.critical_turn is not None
+    assert heavy.land_odds.critical_turn.raw == 4.0
+    assert play.land_odds is not None
+    assert play.land_odds.on_the_play is True
+    assert play.land_odds.by_turn[3].cards_seen == 10
+
+
+def test_mdfc_option_changes_the_lands_used_in_the_odds(repository: SqlCardRepository) -> None:
+    text = "Commander\n1 Atraxa, Praetors' Voice\nDeck\n90 Forest\n9 Emeria's Call // Emeria, Shattered Skyclave\n"
+
+    on = analyze_decklist(text, repository)
+    off = analyze_decklist(text, repository, StatsOptions(count_mdfc_lands=False))
+
+    assert on.land_odds is not None and off.land_odds is not None
+    assert (on.land_odds.lands_in_library, off.land_odds.lands_in_library) == (99, 90)
+    assert on.land_odds.by_turn[3].p_land_drops > off.land_odds.by_turn[3].p_land_drops
+
+
+def test_no_odds_for_an_empty_list(repository: SqlCardRepository) -> None:
+    assert analyze_decklist("", repository).land_odds is None

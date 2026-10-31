@@ -66,3 +66,17 @@ def test_mdfc_lands_are_counted_by_default_and_togglable(repository: SqlCardRepo
     assert on.commander_inferred is True
     assert (on.stats.lands.lands, on.stats.lands.mdfc_lands, on.stats.lands.total) == (35, 4, 39)
     assert off.stats.lands.total == 35
+
+
+def test_moxfield_list_critical_turn_and_land_drop_odds(repository: SqlCardRepository) -> None:
+    """Lista real do Moxfield: Kalamax (MV 4), MV médio 3,17, 36 terrenos em 99 cartas."""
+    text = (DECKS / "moxfield-kalamax.plain.txt").read_text(encoding="utf-8")
+
+    odds = analyze_decklist(text, repository).land_odds
+
+    assert odds is not None and odds.critical_turn is not None
+    assert (odds.library_size, odds.lands_in_library) == (99, 36)
+    assert odds.critical_turn.turn == 4
+    assert odds.critical_turn.raw == pytest.approx(0.6 * 4 + 0.4 * 3.17, abs=0.01)
+    assert odds.at_critical_turn is not None
+    assert odds.at_critical_turn.p_land_drops == pytest.approx(0.6213, abs=1e-3)

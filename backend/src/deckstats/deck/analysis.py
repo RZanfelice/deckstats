@@ -6,6 +6,7 @@ from deckstats.catalog.records import CardRecord
 from deckstats.catalog.repository import CardRepository, MatchedBy
 from deckstats.deck.formats import CommanderRules, FormatRules, Issue, Severity
 from deckstats.deck.model import Deck, DeckEntry, Section
+from deckstats.deck.odds import LandOdds, compute_land_odds
 from deckstats.deck.parser import ParseError, parse_decklist
 from deckstats.deck.stats import DeckStats, StatsOptions, compute_stats
 
@@ -37,6 +38,7 @@ class Analysis:
     format: str
     deck: Deck
     stats: DeckStats
+    land_odds: LandOdds | None
     issues: list[Issue]
     cards: list[ResolvedCard]
     unresolved: list[UnresolvedCard]
@@ -143,10 +145,19 @@ def analyze_decklist(
         )
     issues.sort(key=lambda issue: _SEVERITY_ORDER[issue.severity])
 
+    stats = compute_stats(deck, options)
     return Analysis(
         format=rules.name,
         deck=deck,
-        stats=compute_stats(deck, options),
+        stats=stats,
+        land_odds=compute_land_odds(
+            library_size=stats.main_cards,
+            lands=stats.lands.total,
+            commander_mana_values=stats.commander_mana_values,
+            average_mana_value=stats.average_mana_value,
+            commander_weight=options.commander_weight,
+            on_the_play=options.on_the_play,
+        ),
         issues=issues,
         cards=resolved,
         unresolved=unresolved,
