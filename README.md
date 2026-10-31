@@ -74,6 +74,20 @@ Carrega cerca de 34 mil cartas em ~40 s; repetir o comando é seguro. Para a dem
 uv run python -m deckstats.catalog.cli export-sqlite --data-dir ../data/raw/mtgjson --output ../data/catalog.sqlite
 ```
 
+### Analisar um deck
+
+Com a API no ar (`uv run uvicorn deckstats.main:app --reload`) e o catálogo carregado:
+
+```bash
+curl -s localhost:8000/analyses -H 'content-type: application/json'   -d '{"decklist": "Commander
+1 Atraxa, Praetors'"'"' Voice
+
+Deck
+99 Forest", "options": {"count_mdfc_lands": true}}'
+```
+
+A lista pode vir de Arena, MTGO, Moxfield ou Archidekt (texto colado). A resposta traz estatísticas (terrenos, curva, MV, cores, tipos), as cartas resolvidas e uma lista de `issues` (cartas não encontradas com sugestões, regras de Commander violadas...).
+
 ### Qualidade
 
 ```bash
