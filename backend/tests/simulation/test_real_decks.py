@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from deckstats.catalog.repository import SqlCardRepository
 from deckstats.deck.analysis import analyze_decklist
-from deckstats.simulation.compare import compare_keep_policies
+from deckstats.simulation.compare import compare_keep_policies, compare_variants
 from deckstats.simulation.engine import SimulationOptions, run_simulation
 from deckstats.simulation.model import build_sim_deck, build_simulation_input
 
@@ -76,3 +76,31 @@ def test_castable_policy_trades_mulligans_for_steadier_mana(
     assert rows["terrenos sem perder jogada até o turno 4"].significant
     on_curve = next(r for name, r in rows.items() if name.endswith("(na curva)"))
     assert on_curve.difference > 0 and on_curve.significant
+
+
+@pytest.mark.parametrize("path", sorted(DECKS.glob("*.txt")), ids=lambda p: p.name)
+def test_casting_ramp_raises_the_mana_available_in_real_decks(
+    path: Path, repository: SqlCardRepository
+) -> None:
+    analysis = analyze_decklist(path.read_text(encoding="utf-8"), repository)
+    sim = build_simulation_input(analysis.deck)
+    base = SimulationOptions(iterations=3_000, seed=900)
+
+    rows = {
+        r.metric: r
+        for r in compare_variants(
+            sim.cards,
+            sim.mana,
+            base,
+            baseline={"cast_ramp": False},
+            candidate={"cast_ramp": True},
+            replicates=4,
+        )
+    }
+
+    sources = rows["4 fontes de mana no turno 4"]
+    assert sources.difference > 0.05 and sources.significant
+    assert rows["fez mulligan"].difference == 0.0  # a rampa não muda a mão inicial
+    assert all(
+        r.difference >= 0 for r in rows.values() if "fonte" in r.metric or "comandante" in r.metric
+    )

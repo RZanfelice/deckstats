@@ -13,7 +13,7 @@ from deckstats.simulation.service import EmptyLibraryError, simulate_decklist
 
 router = APIRouter(tags=["simulations"])
 
-MAX_ITERATIONS = 30_000  # ~3,5 s com o modelo de mana completo
+MAX_ITERATIONS = 20_000  # ~7 s no pior caso (10 mil partidas levam ~3,7 s com rampa)
 MIN_ITERATIONS = 100
 COST_PATTERN = r"^(\{[^{}]+\})+$"
 MAX_COSTS = 10
@@ -53,6 +53,13 @@ class SimulationOptionsIn(BaseModel):
     cantrip_weight: float = Field(
         0.5, ge=0, le=1, description="(castable) Quanto de terreno vale cada cantrip (até 2)."
     )
+    cast_ramp: bool = Field(
+        True,
+        description=(
+            "Conjura a rampa da mão com a mana disponível. Cada rampa conjurada vira +1 de mana "
+            "genérica a partir do turno seguinte (paga custo genérico, não símbolos coloridos)."
+        ),
+    )
     count_mdfc_lands: bool = Field(True, description="Conta MDFC com terreno atrás como terreno.")
     costs: list[Annotated[str, Field(pattern=COST_PATTERN)]] = Field(
         default_factory=list,
@@ -81,6 +88,7 @@ class SimulationOptionsIn(BaseModel):
             keep_min_effective=self.keep_min_effective,
             ramp_credit_cap=self.ramp_credit_cap,
             cantrip_weight=self.cantrip_weight,
+            cast_ramp=self.cast_ramp,
         )
 
 
@@ -253,6 +261,7 @@ def create_simulation_from_text(
     keep_min_effective: Annotated[float, Query(ge=0, le=7)] = 2.5,
     ramp_credit_cap: Annotated[int, Query(ge=0, le=4)] = 2,
     cantrip_weight: Annotated[float, Query(ge=0, le=1)] = 0.5,
+    cast_ramp: bool = True,
     count_mdfc_lands: bool = True,
     costs: Annotated[
         list[str] | None, Query(max_length=MAX_COSTS, description="Custos extras, como {2}{U}{U}.")
@@ -273,6 +282,7 @@ def create_simulation_from_text(
             keep_min_effective=keep_min_effective,
             ramp_credit_cap=ramp_credit_cap,
             cantrip_weight=cantrip_weight,
+            cast_ramp=cast_ramp,
             count_mdfc_lands=count_mdfc_lands,
             costs=costs or [],
         )

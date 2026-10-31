@@ -28,6 +28,7 @@ LAND = -1
 MAX_SPELL_CODE = 99
 DEFAULT_PLAN_TURN = 4
 CANTRIP_MAX_MV = 2
+RAMP_SOURCE_NAME = "Rampa (+1 genérico)"
 # Regras da classificação que dão rampa de verdade (mais fontes de mana). Rituais, que
 # só adiantam mana uma vez, não contam como terreno extra na mão inicial.
 _RAMP_SOURCE_RULES = frozenset(
@@ -188,6 +189,11 @@ def build_simulation_input(
         for color in requirement
         if color in COLORS
     )
+    ramp_source: int | None = None
+    if any(spell.ramp for spell in spells):
+        ramp_source = len(land_types)
+        land_types.append(LandType(RAMP_SOURCE_NAME, frozenset({COLORLESS}), False))
+
     return SimulationInput(
         cards=cards,
         mana=ManaModel(
@@ -198,5 +204,6 @@ def build_simulation_input(
             needed_colors=needed,
             unknown_mana_lands=tuple(unknown),
             spells=tuple(spells),
+            ramp_source=ramp_source,
         ),
     )

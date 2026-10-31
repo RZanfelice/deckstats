@@ -137,7 +137,7 @@ def test_a_list_with_no_recognized_cards_is_rejected(client: TestClient) -> None
     "options",
     [
         {"iterations": 99},
-        {"iterations": 30_001},
+        {"iterations": 20_001},
         {"seed": -1},
         {"max_mulligans": 7},
         {"keep_min_lands": 5, "keep_max_lands": 2},
@@ -236,3 +236,30 @@ def test_invalid_keep_options_are_rejected(client: TestClient, options: dict[str
     response = client.post("/simulations", json={"decklist": MIXED, "options": options})
 
     assert response.status_code == 422
+
+
+RAMPY = "Commander\n1 Elf Chief\nDeck\n36 Forest\n30 Sol Ring\n33 Cultivate\n"
+
+
+def test_ramp_casting_is_on_by_default_and_echoed(client: TestClient) -> None:
+    assert post(client, MIXED)["options"]["cast_ramp"] is True
+
+
+def test_ramp_casting_can_be_turned_off(client: TestClient) -> None:
+    body = post(client, MIXED, cast_ramp=False)
+
+    assert body["options"]["cast_ramp"] is False
+
+
+def test_casting_ramp_raises_the_mana_available(client: TestClient) -> None:
+    on = post(client, RAMPY, iterations=1_000, seed=5, cast_ramp=True)
+    off = post(client, RAMPY, iterations=1_000, seed=5, cast_ramp=False)
+
+    assert on["mana"]["sources"]["4"]["5"]["p"] > off["mana"]["sources"]["4"]["5"]["p"]
+    assert on["land_drops"] == off["land_drops"]  # a rampa não muda as jogadas de terreno
+
+
+def test_text_endpoint_reads_cast_ramp(client: TestClient) -> None:
+    body = post_text(client, MIXED, "?cast_ramp=false").json()
+
+    assert body["options"]["cast_ramp"] is False

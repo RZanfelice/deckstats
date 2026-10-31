@@ -32,6 +32,10 @@ class SimulationOptions:
     # políticas diferentes veem os mesmos embaralhamentos e podem ser comparadas par a par.
     paired_seeds: bool = False
 
+    # Conjura a rampa da mão com a mana disponível; cada uma vira +1 de mana genérica a
+    # partir do turno seguinte. Desligado, a simulação só enxerga terrenos.
+    cast_ramp: bool = False
+
     def __post_init__(self) -> None:
         if self.iterations < 1:
             raise ValueError("iterations deve ser pelo menos 1")

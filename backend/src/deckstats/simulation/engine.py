@@ -20,7 +20,7 @@ from dataclasses import dataclass, field
 from deckstats.deck.odds import OPENING_HAND
 from deckstats.simulation.estimate import Estimate, estimate
 from deckstats.simulation.keep import BOTTOM_LAND_LIMIT, bottom_cards, count_lands, is_keepable
-from deckstats.simulation.mana import ManaModel, ManaResult, ManaTally
+from deckstats.simulation.mana import ManaCost, ManaModel, ManaResult, ManaTally, can_pay
 from deckstats.simulation.options import SimulationOptions
 
 __all__ = [
@@ -58,21 +58,55 @@ class SimulationResult:
 
 
 def _choose_land(
-    candidates: Sequence[int], colors_in_play: set[str], turn: int, model: ManaModel
+    candidates: Sequence[int],
+    colors_in_play: set[str],
+    turn: int,
+    model: ManaModel,
+    needed: frozenset[str] | None = None,
 ) -> int:
-    """Política de terrenos: cores que faltam ao comandante primeiro; antes do turno-alvo
-    os terrenos que entram virados (não custam nada), a partir dele os desvirados."""
+    """Política de terrenos: cores que faltam primeiro (as do comandante e, se informadas em
+    ``needed``, as das rampas na mão); antes do turno-alvo os terrenos que entram virados
+    (não custam nada), a partir dele os desvirados."""
+    wanted = model.needed_colors if needed is None else needed
     best = candidates[0]
     best_key: tuple[int, bool, int, int, int] | None = None
     for code in set(candidates):
         land = model.land_types[-1 - code]
-        needed_here = land.colors & model.needed_colors
+        needed_here = land.colors & wanted
         new_needed = len(needed_here - colors_in_play)
         timing = land.enters_tapped if turn < model.plan_turn else not land.enters_tapped
         key = (new_needed, timing, len(needed_here), len(land.colors), code)
         if best_key is None or key > best_key:
             best_key, best = key, code
     return best
+
+
+def _wanted_colors(model: ManaModel, ramp_in_hand: Sequence[int]) -> frozenset[str]:
+    """Cores do comandante mais as que as rampas na mão exigem: jogar o terreno certo
+    é o que permite conjurá-las."""
+    colors = set(model.needed_colors)
+    for code in ramp_in_hand:
+        for requirement in model.spells[code].cost.colored:
+            colors.update(c for c in requirement if c in "WUBRG")
+    return frozenset(colors)
+
+
+def _cast_ramp(
+    candidates: Sequence[int], colors: list[frozenset[str]], model: ManaModel
+) -> list[int]:
+    """Rampas que dá para conjurar juntas com a mana do turno, das mais baratas para as mais caras.
+
+    O custo conjunto precisa ser pagável: ``can_pay`` confere cores e quantidade de uma vez.
+    """
+    chosen: list[int] = []
+    combined = ManaCost(generic=0, colored=())
+    for code in sorted(candidates, key=lambda c: (model.spells[c].mana_value, c)):
+        cost = model.spells[code].cost
+        trial = ManaCost(combined.generic + cost.generic, combined.colored + cost.colored)
+        if can_pay(trial, colors):
+            chosen.append(code)
+            combined = trial
+    return chosen
 
 
 def _play_with_mana(
@@ -83,7 +117,10 @@ def _play_with_mana(
     tally: ManaTally,
     hits: dict[int, int],
 ) -> None:
+    casting = options.cast_ramp and model.ramp_source is not None
     lands_in_hand = [card for card in hand if card < 0]
+    ramp_in_hand = [c for c in hand if casting and c >= 0 and model.spells[c].ramp]
+    ramp_online_from: list[int] = []  # turno a partir do qual cada rampa conjurada dá mana
     in_play: list[tuple[int, int]] = []  # (tipo de terreno, turno em que entrou)
     colors_in_play: set[str] = set()
     next_card = 0
@@ -93,8 +130,12 @@ def _play_with_mana(
             next_card += 1
             if card < 0:
                 lands_in_hand.append(card)
+            elif casting and model.spells[card].ramp:
+                ramp_in_hand.append(card)
         if lands_in_hand:
-            code = _choose_land(lands_in_hand, colors_in_play, turn, model)
+            code = _choose_land(
+                lands_in_hand, colors_in_play, turn, model, _wanted_colors(model, ramp_in_hand)
+            )
             lands_in_hand.remove(code)
             land_index = -1 - code
             in_play.append((land_index, turn))
@@ -106,7 +147,17 @@ def _play_with_mana(
             for index, played in in_play
             if played < turn or not model.land_types[index].enters_tapped
         ]
+        if casting and model.ramp_source is not None:
+            available += [model.ramp_source] * sum(1 for start in ramp_online_from if start <= turn)
         tally.record(turn, available)
+
+        # A rampa é conjurada depois de medir o turno: a mana gasta nela não está disponível
+        # neste turno, e o +1 só passa a valer a partir do seguinte.
+        if casting and ramp_in_hand:
+            colors = [model.land_types[i].colors for i in available if model.land_types[i].colors]
+            for code in _cast_ramp(ramp_in_hand, colors, model):
+                ramp_in_hand.remove(code)
+                ramp_online_from.append(turn + 1)
 
 
 def run_simulation(

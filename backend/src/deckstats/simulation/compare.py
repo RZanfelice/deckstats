@@ -14,6 +14,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from math import sqrt
 from statistics import fmean, stdev
+from typing import Any
 
 from deckstats.simulation.engine import SimulationResult, run_simulation
 from deckstats.simulation.mana import ManaModel
@@ -64,29 +65,29 @@ def metrics_of(result: SimulationResult) -> dict[str, float]:
     return values
 
 
-def compare_keep_policies(
+def compare_variants(
     cards: Sequence[int],
     mana: ManaModel,
     base: SimulationOptions,
     *,
-    baseline: KeepPolicy = "simple",
-    candidate: KeepPolicy = "castable",
+    baseline: dict[str, Any],
+    candidate: dict[str, Any],
     replicates: int = 8,
     progress: Callable[[int], None] | None = None,
 ) -> list[MetricComparison]:
-    """Roda as duas políticas com as mesmas sementes e resume as diferenças."""
+    """Roda duas variantes das opções com as mesmas sementes e resume as diferenças.
+
+    ``baseline`` e ``candidate`` são sobreposições das opções base, por exemplo
+    ``{"keep_policy": "simple"}`` e ``{"cast_ramp": True}``.
+    """
     if replicates < 2:
         raise ValueError("replicates deve ser pelo menos 2 para estimar o erro padrão")
     base_values: dict[str, list[float]] = {}
     candidate_values: dict[str, list[float]] = {}
     for replicate in range(replicates):
         options = replace(base, paired_seeds=True, seed=base.seed + replicate)
-        runs = (
-            (baseline, base_values),
-            (candidate, candidate_values),
-        )
-        for policy, store in runs:
-            result = run_simulation(cards, replace(options, keep_policy=policy), mana)
+        for overrides, store in ((baseline, base_values), (candidate, candidate_values)):
+            result = run_simulation(cards, replace(options, **overrides), mana)
             for name, value in metrics_of(result).items():
                 store.setdefault(name, []).append(value)
         if progress:
@@ -107,3 +108,25 @@ def compare_keep_policies(
             )
         )
     return comparisons
+
+
+def compare_keep_policies(
+    cards: Sequence[int],
+    mana: ManaModel,
+    base: SimulationOptions,
+    *,
+    baseline: KeepPolicy = "simple",
+    candidate: KeepPolicy = "castable",
+    replicates: int = 8,
+    progress: Callable[[int], None] | None = None,
+) -> list[MetricComparison]:
+    """Compara duas políticas de mão mantível nas mesmas partidas."""
+    return compare_variants(
+        cards,
+        mana,
+        base,
+        baseline={"keep_policy": baseline},
+        candidate={"keep_policy": candidate},
+        replicates=replicates,
+        progress=progress,
+    )

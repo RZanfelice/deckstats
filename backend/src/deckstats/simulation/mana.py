@@ -168,6 +168,9 @@ class ManaModel:
     # Com a tabela de magias, os códigos não negativos da biblioteca são índices nela (e não
     # mais o valor de mana). Vazia: códigos legados, em que o código é o próprio valor de mana.
     spells: tuple[SpellType, ...] = ()
+    # Índice, em ``land_types``, da fonte "+1 genérico" que cada rampa conjurada passa a dar.
+    # None: o deck não tem rampa.
+    ramp_source: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
