@@ -191,8 +191,9 @@ def test_friends_forever_pair() -> None:
 
 
 def test_choose_a_background_pairs_with_a_background() -> None:
-    ok = partners(("Choose a Background",), (), b_subtypes=("Background",))
-    wrong = partners(("Choose a Background",), (), b_subtypes=("Elf",))
+    # O MTGJSON grafa a palavra-chave como "Choose a background" (b minúsculo).
+    ok = partners(("Choose a background",), (), b_subtypes=("Background",))
+    wrong = partners(("Choose a background",), (), b_subtypes=("Elf",))
 
     assert "commander_pair_invalid" not in codes(ok)
     assert "commander_pair_invalid" in codes(wrong)
@@ -219,3 +220,18 @@ def test_multiface_commander_keywords_are_collected_from_every_face() -> None:
     )
 
     assert "commander_pair_invalid" not in codes(d)
+
+
+def test_background_is_eligible_next_to_its_commander() -> None:
+    result = partners(("Choose a background",), (), b_subtypes=("Background",))
+
+    assert "commander_not_eligible" not in codes(result)
+
+
+def test_background_alone_is_not_a_valid_commander() -> None:
+    background = make_card(
+        "Raised by Giants", identity=(), types=("Enchantment",), subtypes=("Background",)
+    )
+    d = deck(entry(background, 1, "commander"), entry(land(), 99))
+
+    assert "commander_not_eligible" in codes(d)

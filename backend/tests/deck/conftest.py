@@ -38,6 +38,14 @@ def catalog_cards() -> list[CardRecord]:
         make_card("Elf Chief", mana_value=2.0, mana_cost="{1}{G}", colors=("G",), can_be_commander=True),
         make_card("Goblin Chief", colors=("R",), can_be_commander=True),
         make_card(
+            "Wilson Bear", identity=("G",), colors=("G",), supertypes=("Legendary",),
+            keywords=("Choose a background",), can_be_commander=True,
+        ),
+        make_card(
+            "Raised by Giants", identity=("G",), types=("Enchantment",), supertypes=("Legendary",),
+            subtypes=("Background",),
+        ),
+        make_card(
             "Sol Ring", mana_value=1.0, mana_cost="{1}", types=("Artifact",), identity=(),
             text="{T}: Add {C}{C}.", produced_mana=("C",),
         ),

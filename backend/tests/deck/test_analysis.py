@@ -222,3 +222,14 @@ def test_mdfc_option_changes_the_lands_used_in_the_odds(repository: SqlCardRepos
 
 def test_no_odds_for_an_empty_list(repository: SqlCardRepository) -> None:
     assert analyze_decklist("", repository).land_odds is None
+
+
+def test_commander_and_background_pair_is_inferred_and_valid(
+    repository: SqlCardRepository,
+) -> None:
+    text = "98 Forest\n\n1 Wilson Bear\n1 Raised by Giants\n"
+
+    analysis = analyze_decklist(text, repository)
+
+    assert [e.card.name for e in analysis.deck.commanders] == ["Wilson Bear", "Raised by Giants"]
+    assert codes(analysis) == ["commander_inferred"]

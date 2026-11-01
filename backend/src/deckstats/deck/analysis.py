@@ -6,7 +6,7 @@ from deckstats.catalog.records import CardRecord
 from deckstats.catalog.repository import CardRepository, MatchedBy
 from deckstats.classification.classifier import classify_card
 from deckstats.classification.stats import CategoryStats, compute_category_stats
-from deckstats.deck.formats import CommanderRules, FormatRules, Issue, Severity
+from deckstats.deck.formats import CommanderRules, FormatRules, Issue, Severity, can_lead
 from deckstats.deck.model import Deck, DeckEntry, Section
 from deckstats.deck.odds import LandOdds, compute_land_odds
 from deckstats.deck.parser import ParseError, parse_decklist
@@ -54,7 +54,7 @@ class Analysis:
 def _is_commander_block(items: list[ResolvedCard]) -> bool:
     """1 a 2 cópias no total, todas elegíveis a comandante."""
     total = sum(item.quantity for item in items)
-    return 0 < total <= _MAX_INFERRED_COMMANDERS and all(i.card.can_be_commander for i in items)
+    return 0 < total <= _MAX_INFERRED_COMMANDERS and all(can_lead(i.card) for i in items)
 
 
 def _assign_commanders(

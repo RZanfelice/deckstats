@@ -12,9 +12,6 @@ from deckstats.deck.model import Deck
 
 Severity = Literal["error", "warning", "info"]
 
-_PARTNER_KEYWORDS = frozenset(
-    {"Partner", "Partner with", "Friends forever", "Choose a Background", "Doctor's companion"}
-)
 _ANY_NUMBER_OF_COPIES = "any number of cards named"
 
 
@@ -35,7 +32,8 @@ class FormatRules(Protocol):
 
 
 def _keywords(card: CardRecord) -> set[str]:
-    return {keyword for face in card.faces for keyword in face.keywords}
+    """Palavras-chave em minúsculas: o MTGJSON grafa "Choose a background" e "Partner with"."""
+    return {keyword.lower() for face in card.faces for keyword in face.keywords}
 
 
 def _text(card: CardRecord) -> str:
@@ -50,19 +48,32 @@ def _allows_any_number(card: CardRecord) -> bool:
     return _ANY_NUMBER_OF_COPIES in _text(card).lower()
 
 
+def is_background(card: CardRecord) -> bool:
+    return any("Background" in face.subtypes for face in card.faces)
+
+
+def can_lead(card: CardRecord) -> bool:
+    """Pode ser comandante: criatura/planeswalker com a habilidade, ou um Background.
+
+    O MTGJSON não marca Backgrounds como comandantes (eles só valem ao lado de quem tem
+    "Choose a Background"), então a regra de par é que os valida de fato.
+    """
+    return card.can_be_commander or is_background(card)
+
+
 def _can_pair(first: CardRecord, second: CardRecord) -> bool:
     """Dois comandantes são compatíveis (Partner, Partner with, Background...)."""
     for a, b in ((first, second), (second, first)):
         a_keys, b_keys = _keywords(a), _keywords(b)
-        if "Partner" in a_keys and "Partner" in b_keys:
+        if "partner" in a_keys and "partner" in b_keys:
             return True
-        if "Friends forever" in a_keys and "Friends forever" in b_keys:
+        if "friends forever" in a_keys and "friends forever" in b_keys:
             return True
-        if "Partner with" in a_keys and b.faces[0].name.lower() in _text(a).lower():
+        if "partner with" in a_keys and b.faces[0].name.lower() in _text(a).lower():
             return True
-        if "Choose a Background" in a_keys and any("Background" in f.subtypes for f in b.faces):
+        if "choose a background" in a_keys and is_background(b):
             return True
-        if "Doctor's companion" in a_keys and any("Time Lord" in f.subtypes for f in b.faces):
+        if "doctor's companion" in a_keys and any("Time Lord" in f.subtypes for f in b.faces):
             return True
     return False
 
@@ -90,7 +101,12 @@ class CommanderRules:
             issues.append(
                 Issue("too_many_commanders", "warning", [e.card.name for e in commanders])
             )
-        ineligible = [e.card.name for e in commanders if not e.card.can_be_commander]
+        alone = len(commanders) == 1 and commanders[0].quantity == 1
+        ineligible = [
+            e.card.name
+            for e in commanders
+            if not (e.card.can_be_commander or (is_background(e.card) and not alone))
+        ]
         if ineligible:
             issues.append(Issue("commander_not_eligible", "warning", ineligible))
         if len(commanders) == self.max_commanders and not _can_pair(
