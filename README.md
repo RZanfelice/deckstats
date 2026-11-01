@@ -10,7 +10,7 @@ O projeto **não** recomenda cartas, não monta decks e não substitui ferrament
 
 ```text
 backend/    API FastAPI (Python 3.12, uv)
-frontend/   React + TypeScript (a criar na Fase 6)
+frontend/   React + TypeScript + Vite (interface)
 ml/         código de inferência e features
 training/   pipelines de treino
 workers/    tarefas assíncronas
@@ -48,6 +48,17 @@ uv run uvicorn deckstats.main:app --reload
 ```
 
 A documentação OpenAPI fica em http://localhost:8000/docs.
+
+### Frontend (local)
+
+```bash
+docker compose up -d        # API em http://localhost:8000
+cd frontend
+npm install
+npm run dev                 # http://localhost:5173, com proxy /api -> API
+npm test
+npm run gen:api             # regenera os tipos a partir do OpenAPI do backend
+```
 
 ### Com Docker
 

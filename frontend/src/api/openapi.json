@@ -1,0 +1,1682 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "DeckStats API",
+    "description": "Análise estatística de decks de Magic: The Gathering (Commander).",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analyses": {
+      "post": {
+        "tags": [
+          "analyses"
+        ],
+        "summary": "Analisa uma lista de deck (JSON)",
+        "operationId": "create_analysis_analyses_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalysisRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analyses/text": {
+      "post": {
+        "tags": [
+          "analyses"
+        ],
+        "summary": "Analisa uma lista de deck colada como texto puro",
+        "description": "Igual a `POST /analyses`, mas o corpo é o próprio texto da lista (`Content-Type: text/plain`), exatamente como exportado do Moxfield, Archidekt, Arena ou MTGO. Não precisa escapar nada. A opção vai na query string.",
+        "operationId": "create_analysis_from_text_analyses_text_post",
+        "parameters": [
+          {
+            "name": "count_mdfc_lands",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Conta MDFC com terreno atrás no total de terrenos.",
+              "default": true,
+              "title": "Count Mdfc Lands"
+            },
+            "description": "Conta MDFC com terreno atrás no total de terrenos."
+          },
+          {
+            "name": "commander_weight",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 1,
+              "minimum": 0,
+              "description": "Peso do custo do comandante no turno crítico.",
+              "default": 0.6,
+              "title": "Commander Weight"
+            },
+            "description": "Peso do custo do comandante no turno crítico."
+          },
+          {
+            "name": "on_the_play",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Começa sem comprar no turno 1 (jogo de 2 jogadores).",
+              "default": false,
+              "title": "On The Play"
+            },
+            "description": "Começa sem comprar no turno 1 (jogo de 2 jogadores)."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "text/plain": {
+              "schema": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 20000,
+                "description": "A lista de deck, uma carta por linha.",
+                "examples": [
+                  "Commander\n1 Atraxa, Praetors' Voice\n\nDeck\n1 Sol Ring\n98 Forest"
+                ],
+                "title": "Decklist"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/simulations": {
+      "post": {
+        "tags": [
+          "simulations"
+        ],
+        "summary": "Simula a consistência de mana de um deck (JSON)",
+        "operationId": "create_simulation_simulations_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/simulations/text": {
+      "post": {
+        "tags": [
+          "simulations"
+        ],
+        "summary": "Simula a consistência de mana de um deck colado como texto puro",
+        "description": "Igual a `POST /simulations`, mas o corpo é o próprio texto da lista (`Content-Type: text/plain`). As opções vão na query string; repita `costs` para avaliar mais de um custo.",
+        "operationId": "create_simulation_from_text_simulations_text_post",
+        "parameters": [
+          {
+            "name": "iterations",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 20000,
+              "minimum": 100,
+              "default": 10000,
+              "title": "Iterations"
+            }
+          },
+          {
+            "name": "seed",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Seed"
+            }
+          },
+          {
+            "name": "on_the_play",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "On The Play"
+            }
+          },
+          {
+            "name": "apply_mulligan",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Apply Mulligan"
+            }
+          },
+          {
+            "name": "free_mulligan",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Free Mulligan"
+            }
+          },
+          {
+            "name": "max_mulligans",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 6,
+              "minimum": 0,
+              "default": 3,
+              "title": "Max Mulligans"
+            }
+          },
+          {
+            "name": "keep_min_lands",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 7,
+              "minimum": 0,
+              "default": 2,
+              "title": "Keep Min Lands"
+            }
+          },
+          {
+            "name": "keep_max_lands",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 7,
+              "minimum": 0,
+              "default": 5,
+              "title": "Keep Max Lands"
+            }
+          },
+          {
+            "name": "keep_max_spell_mv",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 20,
+              "minimum": 0,
+              "default": 3,
+              "title": "Keep Max Spell Mv"
+            }
+          },
+          {
+            "name": "keep_policy",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "simple",
+                "castable"
+              ],
+              "type": "string",
+              "default": "castable",
+              "title": "Keep Policy"
+            }
+          },
+          {
+            "name": "keep_min_effective",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 7,
+              "minimum": 0,
+              "default": 2.5,
+              "title": "Keep Min Effective"
+            }
+          },
+          {
+            "name": "ramp_credit_cap",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 4,
+              "minimum": 0,
+              "default": 2,
+              "title": "Ramp Credit Cap"
+            }
+          },
+          {
+            "name": "cantrip_weight",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 1,
+              "minimum": 0,
+              "default": 0.5,
+              "title": "Cantrip Weight"
+            }
+          },
+          {
+            "name": "cast_ramp",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Cast Ramp"
+            }
+          },
+          {
+            "name": "count_mdfc_lands",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Count Mdfc Lands"
+            }
+          },
+          {
+            "name": "costs",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 10
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Custos extras, como {2}{U}{U}.",
+              "title": "Costs"
+            },
+            "description": "Custos extras, como {2}{U}{U}."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "text/plain": {
+              "schema": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 20000,
+                "description": "A lista de deck, uma carta por linha.",
+                "examples": [
+                  "Commander\n1 Atraxa, Praetors' Voice\n\nDeck\n1 Sol Ring\n98 Forest"
+                ],
+                "title": "Decklist"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AnalysisOptions": {
+        "properties": {
+          "count_mdfc_lands": {
+            "type": "boolean",
+            "title": "Count Mdfc Lands",
+            "description": "Conta MDFC com terreno atrás no total de terrenos.",
+            "default": true
+          },
+          "commander_weight": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Commander Weight",
+            "description": "Peso do custo do comandante no turno crítico; o restante vai para o MV médio das demais cartas.",
+            "default": 0.6
+          },
+          "on_the_play": {
+            "type": "boolean",
+            "title": "On The Play",
+            "description": "Começa sem comprar no turno 1 (jogo de 2 jogadores). Em Commander com mais de 2 jogadores todos compram, que é o padrão.",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "AnalysisOptions"
+      },
+      "AnalysisRequest": {
+        "properties": {
+          "decklist": {
+            "type": "string",
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Decklist",
+            "description": "A lista inteira em UMA string. Em JSON, as quebras de linha precisam ser `\\n`. Para colar uma lista direto, use `POST /analyses/text`."
+          },
+          "options": {
+            "$ref": "#/components/schemas/AnalysisOptions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "decklist"
+        ],
+        "title": "AnalysisRequest",
+        "examples": [
+          {
+            "decklist": "Commander\n1 Atraxa, Praetors' Voice\n\nDeck\n1 Sol Ring\n98 Forest"
+          }
+        ]
+      },
+      "AnalysisResponse": {
+        "properties": {
+          "format": {
+            "type": "string",
+            "title": "Format"
+          },
+          "commander_inferred": {
+            "type": "boolean",
+            "title": "Commander Inferred"
+          },
+          "commanders": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Commanders"
+          },
+          "options": {
+            "$ref": "#/components/schemas/AnalysisOptions"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/StatsOut"
+          },
+          "land_odds": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LandOddsOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "categories": {
+            "$ref": "#/components/schemas/CategoriesOut"
+          },
+          "cards": {
+            "items": {
+              "$ref": "#/components/schemas/CardOut"
+            },
+            "type": "array",
+            "title": "Cards"
+          },
+          "unresolved": {
+            "items": {
+              "$ref": "#/components/schemas/UnresolvedOut"
+            },
+            "type": "array",
+            "title": "Unresolved"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/IssueOut"
+            },
+            "type": "array",
+            "title": "Issues"
+          }
+        },
+        "type": "object",
+        "required": [
+          "format",
+          "commander_inferred",
+          "commanders",
+          "options",
+          "stats",
+          "land_odds",
+          "categories",
+          "cards",
+          "unresolved",
+          "issues"
+        ],
+        "title": "AnalysisResponse"
+      },
+      "CardOut": {
+        "properties": {
+          "oracle_id": {
+            "type": "string",
+            "title": "Oracle Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "requested_name": {
+            "type": "string",
+            "title": "Requested Name"
+          },
+          "quantity": {
+            "type": "integer",
+            "title": "Quantity"
+          },
+          "section": {
+            "type": "string",
+            "title": "Section"
+          },
+          "matched_by": {
+            "type": "string",
+            "title": "Matched By"
+          },
+          "alternatives": {
+            "type": "integer",
+            "title": "Alternatives"
+          },
+          "mana_value": {
+            "type": "number",
+            "title": "Mana Value"
+          },
+          "commander_legality": {
+            "type": "string",
+            "title": "Commander Legality"
+          },
+          "categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Categories",
+            "description": "Categorias da carta (ramp, card_draw...), incluindo as implicadas."
+          }
+        },
+        "type": "object",
+        "required": [
+          "oracle_id",
+          "name",
+          "requested_name",
+          "quantity",
+          "section",
+          "matched_by",
+          "alternatives",
+          "mana_value",
+          "commander_legality",
+          "categories"
+        ],
+        "title": "CardOut"
+      },
+      "CategoriesOut": {
+        "properties": {
+          "classifier_version": {
+            "type": "string",
+            "title": "Classifier Version"
+          },
+          "main_cards": {
+            "type": "integer",
+            "title": "Main Cards"
+          },
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryCountOut"
+            },
+            "type": "array",
+            "title": "Categories"
+          },
+          "commander_categories": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Commander Categories"
+          }
+        },
+        "type": "object",
+        "required": [
+          "classifier_version",
+          "main_cards",
+          "categories",
+          "commander_categories"
+        ],
+        "title": "CategoriesOut"
+      },
+      "CategoryCountOut": {
+        "properties": {
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "supported": {
+            "type": "boolean",
+            "title": "Supported",
+            "description": "Falso para categorias que as regras não decidem."
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "description": "Cópias no deck principal."
+          },
+          "percent": {
+            "type": "number",
+            "title": "Percent",
+            "description": "Fração do deck principal, de 0 a 1."
+          },
+          "cards": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Cards"
+          }
+        },
+        "type": "object",
+        "required": [
+          "category",
+          "supported",
+          "count",
+          "percent",
+          "cards"
+        ],
+        "title": "CategoryCountOut"
+      },
+      "CostOut": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "description": "`commander`, `deck_color:<cor>` ou `custom`."
+          },
+          "cost": {
+            "type": "string",
+            "title": "Cost"
+          },
+          "mana_value": {
+            "type": "integer",
+            "title": "Mana Value"
+          },
+          "on_curve_turn": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Curve Turn"
+          },
+          "by_turn": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/EstimateOut"
+            },
+            "type": "object",
+            "title": "By Turn",
+            "description": "P(conseguir pagar o custo no turno)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "source",
+          "cost",
+          "mana_value",
+          "on_curve_turn",
+          "by_turn"
+        ],
+        "title": "CostOut"
+      },
+      "CriticalTurnOut": {
+        "properties": {
+          "raw": {
+            "type": "number",
+            "title": "Raw",
+            "description": "Valor antes de arredondar."
+          },
+          "turn": {
+            "type": "integer",
+            "title": "Turn"
+          },
+          "commander_mana_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Commander Mana Value"
+          },
+          "average_mana_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Mana Value"
+          },
+          "commander_weight": {
+            "type": "number",
+            "title": "Commander Weight",
+            "description": "Peso efetivamente usado (0 ou 1 se faltou um insumo)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "raw",
+          "turn",
+          "commander_mana_value",
+          "average_mana_value",
+          "commander_weight"
+        ],
+        "title": "CriticalTurnOut"
+      },
+      "EstimateOut": {
+        "properties": {
+          "p": {
+            "type": "number",
+            "title": "P"
+          },
+          "ci_low": {
+            "type": "number",
+            "title": "Ci Low",
+            "description": "Limite inferior do intervalo de Wilson a 95%."
+          },
+          "ci_high": {
+            "type": "number",
+            "title": "Ci High"
+          },
+          "n": {
+            "type": "integer",
+            "title": "N"
+          }
+        },
+        "type": "object",
+        "required": [
+          "p",
+          "ci_low",
+          "ci_high",
+          "n"
+        ],
+        "title": "EstimateOut"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "version"
+        ],
+        "title": "HealthResponse"
+      },
+      "IssueOut": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity"
+          },
+          "cards": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Cards"
+          },
+          "details": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Details"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "severity",
+          "cards",
+          "details"
+        ],
+        "title": "IssueOut"
+      },
+      "LandCountAnalysisOut": {
+        "properties": {
+          "turn": {
+            "type": "integer",
+            "title": "Turn",
+            "description": "Turno crítico usado."
+          },
+          "cards_seen": {
+            "type": "integer",
+            "title": "Cards Seen"
+          },
+          "current_lands": {
+            "type": "integer",
+            "title": "Current Lands"
+          },
+          "current_probability": {
+            "type": "number",
+            "title": "Current Probability",
+            "description": "Chance de não perder nenhum terreno até o turno crítico (terrenos atuais)."
+          },
+          "sensitivity": {
+            "items": {
+              "$ref": "#/components/schemas/LandCountPointOut"
+            },
+            "type": "array",
+            "title": "Sensitivity",
+            "description": "A mesma chance com 5 terrenos a menos até 5 a mais que o deck atual."
+          },
+          "required": {
+            "items": {
+              "$ref": "#/components/schemas/LandRequirementOut"
+            },
+            "type": "array",
+            "title": "Required",
+            "description": "Terrenos necessários para atingir 70%, 80% e 90%."
+          }
+        },
+        "type": "object",
+        "required": [
+          "turn",
+          "cards_seen",
+          "current_lands",
+          "current_probability",
+          "sensitivity",
+          "required"
+        ],
+        "title": "LandCountAnalysisOut"
+      },
+      "LandCountPointOut": {
+        "properties": {
+          "lands": {
+            "type": "integer",
+            "title": "Lands"
+          },
+          "delta": {
+            "type": "integer",
+            "title": "Delta",
+            "description": "Diferença para os terrenos atuais do deck."
+          },
+          "p_land_drops": {
+            "type": "number",
+            "title": "P Land Drops"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lands",
+          "delta",
+          "p_land_drops"
+        ],
+        "title": "LandCountPointOut"
+      },
+      "LandOddsOut": {
+        "properties": {
+          "library_size": {
+            "type": "integer",
+            "title": "Library Size"
+          },
+          "lands_in_library": {
+            "type": "integer",
+            "title": "Lands In Library"
+          },
+          "on_the_play": {
+            "type": "boolean",
+            "title": "On The Play"
+          },
+          "critical_turn": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CriticalTurnOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "by_turn": {
+            "items": {
+              "$ref": "#/components/schemas/TurnOddsOut"
+            },
+            "type": "array",
+            "title": "By Turn"
+          },
+          "at_critical_turn": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TurnOddsOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "land_count": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LandCountAnalysisOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "library_size",
+          "lands_in_library",
+          "on_the_play",
+          "critical_turn",
+          "by_turn",
+          "at_critical_turn",
+          "land_count"
+        ],
+        "title": "LandOddsOut"
+      },
+      "LandRequirementOut": {
+        "properties": {
+          "target": {
+            "type": "number",
+            "title": "Target"
+          },
+          "lands": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lands",
+            "description": "Menor número de terrenos que atinge a meta; nulo se nem a biblioteca basta."
+          },
+          "delta": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delta",
+            "description": "Terrenos a adicionar (positivo) ou sobrando (negativo) em relação ao deck."
+          }
+        },
+        "type": "object",
+        "required": [
+          "target",
+          "lands",
+          "delta"
+        ],
+        "title": "LandRequirementOut"
+      },
+      "LandsOut": {
+        "properties": {
+          "lands": {
+            "type": "integer",
+            "title": "Lands"
+          },
+          "mdfc_lands": {
+            "type": "integer",
+            "title": "Mdfc Lands"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lands",
+          "mdfc_lands",
+          "total"
+        ],
+        "title": "LandsOut"
+      },
+      "ManaOut": {
+        "properties": {
+          "plan_turn": {
+            "type": "integer",
+            "title": "Plan Turn",
+            "description": "Turno-alvo da política de jogada de terrenos."
+          },
+          "colors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Colors"
+          },
+          "sources": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/EstimateOut"
+              },
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Sources",
+            "description": "Turno -> X -> P(pelo menos X fontes de mana desviradas)."
+          },
+          "color_sources": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/EstimateOut"
+                },
+                "type": "object"
+              },
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Color Sources",
+            "description": "Cor -> turno -> k -> P(pelo menos k fontes dessa cor)."
+          },
+          "costs": {
+            "items": {
+              "$ref": "#/components/schemas/CostOut"
+            },
+            "type": "array",
+            "title": "Costs"
+          },
+          "unknown_mana_lands": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unknown Mana Lands",
+            "description": "Terrenos sem mana conhecida (ex.: fetchlands): contam como terreno, sem mana."
+          }
+        },
+        "type": "object",
+        "required": [
+          "plan_turn",
+          "colors",
+          "sources",
+          "color_sources",
+          "costs",
+          "unknown_mana_lands"
+        ],
+        "title": "ManaOut"
+      },
+      "MulliganOut": {
+        "properties": {
+          "at_least_one": {
+            "$ref": "#/components/schemas/EstimateOut",
+            "description": "M2: pelo menos um mulligan."
+          },
+          "distribution": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/EstimateOut"
+            },
+            "type": "object",
+            "title": "Distribution"
+          },
+          "mean_final_hand_size": {
+            "type": "number",
+            "title": "Mean Final Hand Size"
+          }
+        },
+        "type": "object",
+        "required": [
+          "at_least_one",
+          "distribution",
+          "mean_final_hand_size"
+        ],
+        "title": "MulliganOut"
+      },
+      "OpeningHandOut": {
+        "properties": {
+          "keepable": {
+            "$ref": "#/components/schemas/EstimateOut",
+            "description": "M1: a 1ª mão de 7 cartas é mantível."
+          },
+          "lands": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/EstimateOut"
+            },
+            "type": "object",
+            "title": "Lands",
+            "description": "Distribuição de terrenos na 1ª mão."
+          }
+        },
+        "type": "object",
+        "required": [
+          "keepable",
+          "lands"
+        ],
+        "title": "OpeningHandOut"
+      },
+      "SimulationOptionsIn": {
+        "properties": {
+          "iterations": {
+            "type": "integer",
+            "maximum": 20000,
+            "minimum": 100,
+            "title": "Iterations",
+            "default": 10000
+          },
+          "seed": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Seed",
+            "description": "Mesma semente, mesmo resultado.",
+            "default": 0
+          },
+          "on_the_play": {
+            "type": "boolean",
+            "title": "On The Play",
+            "description": "Começa sem comprar no turno 1 (2 jogadores).",
+            "default": false
+          },
+          "apply_mulligan": {
+            "type": "boolean",
+            "title": "Apply Mulligan",
+            "description": "Aplica a política de mulligan à mão usada nos turnos.",
+            "default": true
+          },
+          "free_mulligan": {
+            "type": "boolean",
+            "title": "Free Mulligan",
+            "description": "O primeiro mulligan é grátis (Commander).",
+            "default": true
+          },
+          "max_mulligans": {
+            "type": "integer",
+            "maximum": 6,
+            "minimum": 0,
+            "title": "Max Mulligans",
+            "default": 3
+          },
+          "keep_min_lands": {
+            "type": "integer",
+            "maximum": 7,
+            "minimum": 0,
+            "title": "Keep Min Lands",
+            "description": "Mínimo de terrenos numa mão mantível.",
+            "default": 2
+          },
+          "keep_max_lands": {
+            "type": "integer",
+            "maximum": 7,
+            "minimum": 0,
+            "title": "Keep Max Lands",
+            "description": "Máximo de terrenos numa mão mantível.",
+            "default": 5
+          },
+          "keep_max_spell_mv": {
+            "type": "integer",
+            "maximum": 20,
+            "minimum": 0,
+            "title": "Keep Max Spell Mv",
+            "description": "Uma mão mantível precisa de uma magia com MV até este valor.",
+            "default": 3
+          },
+          "keep_policy": {
+            "type": "string",
+            "enum": [
+              "simple",
+              "castable"
+            ],
+            "title": "Keep Policy",
+            "description": "`castable`: só conta o que dá para conjurar com os terrenos da mão; rampa castável vale como terreno extra e cantrips baratos como fração de terreno. `simple`: terrenos no intervalo e uma magia de MV baixo, sem olhar a castabilidade.",
+            "default": "castable"
+          },
+          "keep_min_effective": {
+            "type": "number",
+            "maximum": 7,
+            "minimum": 0,
+            "title": "Keep Min Effective",
+            "description": "(castable) Mínimo de terrenos efetivos: reais + rampa + fração dos cantrips.",
+            "default": 2.5
+          },
+          "ramp_credit_cap": {
+            "type": "integer",
+            "maximum": 4,
+            "minimum": 0,
+            "title": "Ramp Credit Cap",
+            "description": "(castable) Quantas rampas castáveis contam como terreno.",
+            "default": 2
+          },
+          "cantrip_weight": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Cantrip Weight",
+            "description": "(castable) Quanto de terreno vale cada cantrip (até 2).",
+            "default": 0.5
+          },
+          "cast_ramp": {
+            "type": "boolean",
+            "title": "Cast Ramp",
+            "description": "Conjura a rampa da mão com a mana disponível. Cada rampa conjurada vira +1 de mana genérica a partir do turno seguinte (paga custo genérico, não símbolos coloridos).",
+            "default": true
+          },
+          "count_mdfc_lands": {
+            "type": "boolean",
+            "title": "Count Mdfc Lands",
+            "description": "Conta MDFC com terreno atrás como terreno.",
+            "default": true
+          },
+          "costs": {
+            "items": {
+              "type": "string",
+              "pattern": "^(\\{[^{}]+\\})+$"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Costs",
+            "description": "Custos extras a avaliar, como `{2}{U}{U}`."
+          }
+        },
+        "type": "object",
+        "title": "SimulationOptionsIn"
+      },
+      "SimulationRequest": {
+        "properties": {
+          "decklist": {
+            "type": "string",
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Decklist",
+            "description": "A lista inteira em UMA string (quebras de linha como `\\n`). Para colar direto, use `POST /simulations/text`."
+          },
+          "options": {
+            "$ref": "#/components/schemas/SimulationOptionsIn"
+          }
+        },
+        "type": "object",
+        "required": [
+          "decklist"
+        ],
+        "title": "SimulationRequest",
+        "examples": [
+          {
+            "decklist": "Commander\n1 Atraxa, Praetors' Voice\n\nDeck\n1 Sol Ring\n98 Forest"
+          }
+        ]
+      },
+      "SimulationResponse": {
+        "properties": {
+          "format": {
+            "type": "string",
+            "title": "Format"
+          },
+          "commanders": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Commanders"
+          },
+          "commander_inferred": {
+            "type": "boolean",
+            "title": "Commander Inferred"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/IssueOut"
+            },
+            "type": "array",
+            "title": "Issues"
+          },
+          "options": {
+            "$ref": "#/components/schemas/SimulationOptionsIn"
+          },
+          "iterations": {
+            "type": "integer",
+            "title": "Iterations"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed"
+          },
+          "library_size": {
+            "type": "integer",
+            "title": "Library Size"
+          },
+          "lands_in_library": {
+            "type": "integer",
+            "title": "Lands In Library"
+          },
+          "opening_hand": {
+            "$ref": "#/components/schemas/OpeningHandOut"
+          },
+          "mulligans": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MulliganOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "land_drops": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/EstimateOut"
+            },
+            "type": "object",
+            "title": "Land Drops",
+            "description": "M3: P(não perder nenhuma jogada de terreno até o turno)."
+          },
+          "mana": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ManaOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "format",
+          "commanders",
+          "commander_inferred",
+          "issues",
+          "options",
+          "iterations",
+          "seed",
+          "library_size",
+          "lands_in_library",
+          "opening_hand",
+          "mulligans",
+          "land_drops",
+          "mana"
+        ],
+        "title": "SimulationResponse"
+      },
+      "StatsOut": {
+        "properties": {
+          "played_cards": {
+            "type": "integer",
+            "title": "Played Cards"
+          },
+          "main_cards": {
+            "type": "integer",
+            "title": "Main Cards"
+          },
+          "nonland_cards": {
+            "type": "integer",
+            "title": "Nonland Cards"
+          },
+          "lands": {
+            "$ref": "#/components/schemas/LandsOut"
+          },
+          "curve": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Curve"
+          },
+          "average_mana_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Mana Value"
+          },
+          "median_mana_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Mana Value"
+          },
+          "commander_mana_values": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Commander Mana Values"
+          },
+          "card_colors": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Card Colors"
+          },
+          "multicolor_cards": {
+            "type": "integer",
+            "title": "Multicolor Cards"
+          },
+          "pips": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Pips"
+          },
+          "color_identity": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Color Identity"
+          },
+          "types": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Types"
+          },
+          "permanents": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Permanents"
+          }
+        },
+        "type": "object",
+        "required": [
+          "played_cards",
+          "main_cards",
+          "nonland_cards",
+          "lands",
+          "curve",
+          "average_mana_value",
+          "median_mana_value",
+          "commander_mana_values",
+          "card_colors",
+          "multicolor_cards",
+          "pips",
+          "color_identity",
+          "types",
+          "permanents"
+        ],
+        "title": "StatsOut"
+      },
+      "TurnOddsOut": {
+        "properties": {
+          "turn": {
+            "type": "integer",
+            "title": "Turn"
+          },
+          "cards_seen": {
+            "type": "integer",
+            "title": "Cards Seen"
+          },
+          "expected_lands": {
+            "type": "number",
+            "title": "Expected Lands"
+          },
+          "p_land_drops": {
+            "type": "number",
+            "title": "P Land Drops",
+            "description": "Chance de ter pelo menos `turn` terrenos entre as cartas vistas."
+          },
+          "p_at_least": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "P At Least",
+            "description": "Chance de ter pelo menos k terrenos, k de 1 a 10."
+          }
+        },
+        "type": "object",
+        "required": [
+          "turn",
+          "cards_seen",
+          "expected_lands",
+          "p_land_drops",
+          "p_at_least"
+        ],
+        "title": "TurnOddsOut"
+      },
+      "UnresolvedOut": {
+        "properties": {
+          "requested_name": {
+            "type": "string",
+            "title": "Requested Name"
+          },
+          "quantity": {
+            "type": "integer",
+            "title": "Quantity"
+          },
+          "section": {
+            "type": "string",
+            "title": "Section"
+          },
+          "line_number": {
+            "type": "integer",
+            "title": "Line Number"
+          },
+          "suggestions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Suggestions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "requested_name",
+          "quantity",
+          "section",
+          "line_number",
+          "suggestions"
+        ],
+        "title": "UnresolvedOut"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
